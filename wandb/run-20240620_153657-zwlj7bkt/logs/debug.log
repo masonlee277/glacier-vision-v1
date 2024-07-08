@@ -1,0 +1,91 @@
+2024-06-20 15:36:57,741 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Current SDK version is 0.16.5
+2024-06-20 15:36:57,742 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Configure stats pid to 10577
+2024-06-20 15:36:57,742 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Loading settings from /teamspace/studios/this_studio/.config/wandb/settings
+2024-06-20 15:36:57,743 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Loading settings from /teamspace/studios/this_studio/wandb/settings
+2024-06-20 15:36:57,743 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-06-20 15:36:57,743 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-06-20 15:36:57,744 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program': '<python with no main file>'}
+2024-06-20 15:36:57,745 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-06-20 15:36:57,745 INFO    MainThread:10577 [wandb_init.py:_log_setup():527] Logging user logs to /teamspace/studios/this_studio/wandb/run-20240620_153657-zwlj7bkt/logs/debug.log
+2024-06-20 15:36:57,746 INFO    MainThread:10577 [wandb_init.py:_log_setup():528] Logging internal logs to /teamspace/studios/this_studio/wandb/run-20240620_153657-zwlj7bkt/logs/debug-internal.log
+2024-06-20 15:36:57,746 INFO    MainThread:10577 [wandb_init.py:_jupyter_setup():473] configuring jupyter hooks <wandb.sdk.wandb_init._WandbInit object at 0x7f6540c7b970>
+2024-06-20 15:36:57,747 INFO    MainThread:10577 [wandb_init.py:init():567] calling init triggers
+2024-06-20 15:36:57,747 INFO    MainThread:10577 [wandb_init.py:init():574] wandb.init called with sweep_config: {}
+config: {}
+2024-06-20 15:36:57,748 INFO    MainThread:10577 [wandb_init.py:init():592] re-initializing run, found existing run on stack: l1d7uu9y
+2024-06-20 15:36:57,752 INFO    MainThread:10577 [wandb_run.py:_finish():2052] finishing run firecrew/uncategorized/l1d7uu9y
+2024-06-20 15:36:57,753 INFO    MainThread:10577 [wandb_run.py:_atexit_cleanup():2292] got exitcode: 0
+2024-06-20 15:36:57,754 INFO    MainThread:10577 [wandb_run.py:_restore():2275] restore
+2024-06-20 15:36:57,754 INFO    MainThread:10577 [wandb_run.py:_restore():2281] restore done
+2024-06-20 15:37:01,791 INFO    MainThread:10577 [wandb_run.py:_footer_history_summary_info():3920] rendering history
+2024-06-20 15:37:01,792 INFO    MainThread:10577 [wandb_run.py:_footer_history_summary_info():3952] rendering summary
+2024-06-20 15:37:01,797 INFO    MainThread:10577 [wandb_run.py:_footer_sync_info():3879] logging synced files
+2024-06-20 15:37:01,835 INFO    MainThread:10577 [wandb_init.py:init():617] starting backend
+2024-06-20 15:37:01,835 INFO    MainThread:10577 [wandb_init.py:init():621] setting up manager
+2024-06-20 15:37:01,838 INFO    MainThread:10577 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-06-20 15:37:01,838 INFO    MainThread:10577 [wandb_init.py:init():629] backend started and connected
+2024-06-20 15:37:01,851 INFO    MainThread:10577 [wandb_run.py:_label_probe_notebook():1299] probe notebook
+2024-06-20 15:37:01,851 INFO    MainThread:10577 [wandb_run.py:_label_probe_notebook():1309] Unable to probe notebook: 'NoneType' object has no attribute 'get'
+2024-06-20 15:37:01,851 INFO    MainThread:10577 [wandb_init.py:init():721] updated telemetry
+2024-06-20 15:37:01,852 INFO    MainThread:10577 [wandb_init.py:init():754] communicating run to backend with 90.0 second timeout
+2024-06-20 15:37:02,967 INFO    MainThread:10577 [wandb_run.py:_on_init():2344] communicating current version
+2024-06-20 15:37:02,985 INFO    MainThread:10577 [wandb_run.py:_on_init():2353] got version response upgrade_message: "wandb version 0.17.2 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-06-20 15:37:02,985 INFO    MainThread:10577 [wandb_init.py:init():805] starting run threads in backend
+2024-06-20 15:37:10,323 WARNING MainThread:10577 [wandb_init.py:init():1209] interrupted
+Traceback (most recent call last):
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/site-packages/wandb/sdk/wandb_init.py", line 1187, in init
+    run = wi.init()
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/site-packages/wandb/sdk/wandb_init.py", line 847, in init
+    run._on_start()
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/site-packages/wandb/sdk/wandb_run.py", line 2376, in _on_start
+    self._backend.interface.publish_python_packages(working_set())
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/site-packages/wandb/sdk/interface/interface.py", line 294, in publish_python_packages
+    for pkg in working_set:
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/site-packages/wandb/util.py", line 1878, in working_set
+    yield InstalledDistribution(key=d.metadata["Name"], version=d.version)
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/importlib/metadata/__init__.py", line 612, in metadata
+    return _adapters.Message(email.message_from_string(text))
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/email/__init__.py", line 38, in message_from_string
+    return Parser(*args, **kws).parsestr(s)
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/email/parser.py", line 67, in parsestr
+    return self.parse(StringIO(text), headersonly=headersonly)
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/email/parser.py", line 56, in parse
+    feedparser.feed(data)
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/email/feedparser.py", line 176, in feed
+    self._call_parse()
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/email/feedparser.py", line 180, in _call_parse
+    self._parse()
+  File "/home/zeus/miniconda3/envs/cloudspace/lib/python3.10/email/feedparser.py", line 465, in _parsegen
+    if line is NeedMoreData:
+KeyboardInterrupt
+2024-06-20 15:37:11,122 INFO    MainThread:10577 [jupyter.py:save_ipynb():373] not saving jupyter notebook
+2024-06-20 15:37:11,123 INFO    MainThread:10577 [wandb_init.py:_pause_backend():438] pausing backend
+2024-06-20 15:39:54,485 INFO    MainThread:10577 [wandb_init.py:_resume_backend():443] resuming backend
+2024-06-20 15:39:54,490 INFO    MainThread:10577 [jupyter.py:save_ipynb():373] not saving jupyter notebook
+2024-06-20 15:39:54,491 INFO    MainThread:10577 [wandb_init.py:_pause_backend():438] pausing backend
+2024-06-20 15:40:42,287 INFO    MainThread:10577 [wandb_init.py:_resume_backend():443] resuming backend
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Current SDK version is 0.16.5
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Configure stats pid to 10577
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Loading settings from /teamspace/studios/this_studio/.config/wandb/settings
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Loading settings from /teamspace/studios/this_studio/wandb/settings
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-06-20 15:40:42,306 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program': '<python with no main file>'}
+2024-06-20 15:40:42,307 INFO    MainThread:10577 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-06-20 15:40:42,307 INFO    MainThread:10577 [wandb_init.py:_log_setup():527] Logging user logs to /teamspace/studios/this_studio/wandb/run-20240620_154042-djghy4bl/logs/debug.log
+2024-06-20 15:40:42,307 INFO    MainThread:10577 [wandb_init.py:_log_setup():528] Logging internal logs to /teamspace/studios/this_studio/wandb/run-20240620_154042-djghy4bl/logs/debug-internal.log
+2024-06-20 15:40:42,307 INFO    MainThread:10577 [wandb_init.py:init():567] calling init triggers
+2024-06-20 15:40:42,307 INFO    MainThread:10577 [wandb_init.py:init():574] wandb.init called with sweep_config: {}
+config: {}
+2024-06-20 15:40:42,307 INFO    MainThread:10577 [wandb_init.py:init():592] re-initializing run, found existing run on stack: zwlj7bkt
+2024-06-20 15:40:42,309 INFO    MainThread:10577 [wandb_run.py:_finish():2052] finishing run firecrew/uncategorized/zwlj7bkt
+2024-06-20 15:40:42,309 INFO    MainThread:10577 [jupyter.py:save_history():445] not saving jupyter history
+2024-06-20 15:40:42,309 INFO    MainThread:10577 [jupyter.py:save_ipynb():373] not saving jupyter notebook
+2024-06-20 15:40:42,310 INFO    MainThread:10577 [wandb_init.py:_jupyter_teardown():455] cleaning up jupyter logic
+2024-06-20 15:40:42,310 INFO    MainThread:10577 [wandb_run.py:_atexit_cleanup():2292] got exitcode: 0
+2024-06-20 15:40:42,310 INFO    MainThread:10577 [wandb_run.py:_restore():2275] restore
+2024-06-20 15:40:42,310 INFO    MainThread:10577 [wandb_run.py:_restore():2281] restore done
+2024-06-20 15:40:44,747 INFO    MainThread:10577 [wandb_run.py:_footer_history_summary_info():3920] rendering history
+2024-06-20 15:40:44,747 INFO    MainThread:10577 [wandb_run.py:_footer_history_summary_info():3952] rendering summary
+2024-06-20 15:40:44,750 INFO    MainThread:10577 [wandb_run.py:_footer_sync_info():3879] logging synced files

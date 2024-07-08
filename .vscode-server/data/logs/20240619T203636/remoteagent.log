@@ -1,0 +1,18 @@
+2024-06-19 20:36:36.977 [info] 
+
+
+
+
+2024-06-19 20:36:36.977 [info] Extension host agent started.
+2024-06-19 20:36:36.977 [info] Started initializing default profile extensions in extensions installation folder. file:///teamspace/studios/this_studio/.vscode-server/extensions
+2024-06-19 20:36:36.994 [info] Completed initializing default profile extensions in extensions installation folder. file:///teamspace/studios/this_studio/.vscode-server/extensions
+2024-06-19 20:36:37.155 [info] [<unknown>][45199515][ExtensionHostConnection] New connection established.
+2024-06-19 20:36:37.156 [info] [<unknown>][0dc31179][ManagementConnection] New connection established.
+2024-06-19 20:36:37.287 [info] [<unknown>][45199515][ExtensionHostConnection] <13071> Launched Extension Host Process.
+2024-06-19 20:41:36.935 [info] New EH opened, aborting shutdown
+2024-06-19 20:41:36.936 [error] Error: Unexpected SIGPIPE
+    at process.<anonymous> (/teamspace/studios/this_studio/.vscode-server/cli/servers/Stable-dc96b837cf6bb4af9cd736aa3af08cf8279f7685/server/out/vs/server/node/server.main.js:189:6057)
+    at process.emit (node:events:517:28)
+2024-06-19 23:37:32.735 [info] [<unknown>][45199515][ExtensionHostConnection] <13071> Extension Host Process exited with code: 0, signal: null.
+2024-06-19 23:37:32.737 [info] Last EH closed, waiting before shutting down
+2024-06-19 23:42:32.738 [info] Last EH closed, shutting down

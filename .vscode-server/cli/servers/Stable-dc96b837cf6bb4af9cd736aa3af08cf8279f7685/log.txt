@@ -1,0 +1,21 @@
+*
+* Visual Studio Code Server
+*
+* By using the software, you agree to
+* the Visual Studio Code Server License Terms (https://aka.ms/vscode-server-license) and
+* the Microsoft Privacy Statement (https://privacy.microsoft.com/en-US/privacystatement).
+*
+Server bound to /tmp/code-75abaefe-e4a9-4db1-84fe-1aae41fd9e92
+Extension host agent listening on /tmp/code-75abaefe-e4a9-4db1-84fe-1aae41fd9e92
+
+[20:36:36] 
+
+
+
+
+[20:36:36] Extension host agent started.
+[20:36:36] Started initializing default profile extensions in extensions installation folder. file:///teamspace/studios/this_studio/.vscode-server/extensions
+[20:36:36] Completed initializing default profile extensions in extensions installation folder. file:///teamspace/studios/this_studio/.vscode-server/extensions
+[20:36:37] [<unknown>][45199515][ExtensionHostConnection] New connection established.
+[20:36:37] [<unknown>][0dc31179][ManagementConnection] New connection established.
+[20:36:37] [<unknown>][45199515][ExtensionHostConnection] <13071> Launched Extension Host Process.

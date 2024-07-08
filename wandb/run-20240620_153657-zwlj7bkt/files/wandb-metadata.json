@@ -1,0 +1,53 @@
+{
+    "os": "Linux-5.15.0-1063-aws-x86_64-with-glibc2.31",
+    "python": "3.10.13",
+    "heartbeatAt": "2024-06-20T15:37:03.053281",
+    "startedAt": "2024-06-20T15:36:57.732770",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "<python with no main file>",
+    "codePathLocal": null,
+    "host": "ip-10-192-12-115",
+    "username": "zeus",
+    "executable": "/home/zeus/miniconda3/envs/cloudspace/bin/python",
+    "cpu_count": 2,
+    "cpu_count_logical": 4,
+    "cpu_freq": {
+        "current": 2650.1839999999997,
+        "min": 0.0,
+        "max": 0.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2499.998,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3100.742,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2499.998,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2499.998,
+            "min": 0.0,
+            "max": 0.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 387.4823341369629,
+            "used": 38.00835037231445
+        }
+    },
+    "memory": {
+        "total": 15.32571029663086
+    }
+}

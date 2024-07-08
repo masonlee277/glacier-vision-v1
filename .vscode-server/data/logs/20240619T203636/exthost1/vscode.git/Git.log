@@ -1,0 +1,31 @@
+2024-06-19 20:36:45.010 [info] Log level: Info
+2024-06-19 20:36:45.010 [info] Validating found git in: "git"
+2024-06-19 20:36:45.010 [info] Using git "2.42.0" from "git"
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [3ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [3ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [2ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [2ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [3ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [3ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+2024-06-19 20:36:45.010 [info] > git rev-parse --show-toplevel [2ms]
+2024-06-19 20:36:45.010 [info] /bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+fatal: not a git repository (or any parent up to mount point /teamspace/studios)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
