@@ -2,3 +2,4 @@ data/sat_images
 .appmap
 /appmap
 data/model_weights
+data/mark_validation
