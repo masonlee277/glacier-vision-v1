@@ -3,6 +3,5 @@ data/sat_images
 .netrc
 .lightning_studio
 /appmap
-data/model_weights
 segment-anything-2
 wandb
