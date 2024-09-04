@@ -1,29 +1,30 @@
 import os
+import sys
+import logging
+from datetime import datetime
+import io
+import numpy as np
+from PIL import Image
 import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
-import numpy as np
-from PIL import Image
-import io
-import logging
-from datetime import datetime
-import sys
+import uvicorn
 
-# Import your utility functions
-# add utils to the path 
 # Add the project root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
-data/model_weights/riverNet/retrained/model_weights_epoch_70.h5
-
+# Import utility functions
 from utils import normalize_to_8bit, full_prediction_tiff, compile_model, mean_iou, dice_lossV1
 
 # Set up logging
 log_dir = os.path.join('data', 'logs')
 os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, f'api_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+log_file = os.path.join(log_dir, 'app_logs.log')
+
+# Clear the log file if it exists
+if os.path.exists(log_file):
+    open(log_file, 'w').close()
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -36,6 +37,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+logger.info("Logging initialized. Previous logs cleared.")
+
 app = FastAPI()
 
 # Helper function to load models
@@ -43,7 +46,7 @@ def load_models():
     logger.info("Starting to load models")
     
     # Load RiverNet models
-    model_weights_dir = "data/model_weights/riverNet/retrained"
+    model_weights_dir = os.path.join(project_root, "data/model_weights/riverNet/retrained")
     checkpoints = [
         os.path.join(model_weights_dir, f"model_weights_epoch_{epoch}.h5")
         for epoch in [80, 70, 90, 100]
@@ -62,7 +65,7 @@ def load_models():
             raise
     
     # Load SegConnector model
-    seg_connector_path = 'data/model_weights/segConnector/wandb_artifacts/model-training_on_RiverNet_PredictionsV2:v29'
+    seg_connector_path = os.path.join(project_root, 'data/model_weights/segConnector/wandb_artifacts/model-training_on_own_predictions:v35')
     logger.debug(f"Loading SegConnector model from: {seg_connector_path}")
     try:
         seg_connector = tf.keras.models.load_model(
@@ -79,7 +82,9 @@ def load_models():
 
 # Load models at startup
 try:
+    logger.info("Attempting to load models at startup")
     riverNet_models, seg_connector = load_models()
+    logger.info("Models successfully loaded at startup")
 except Exception as e:
     logger.critical(f"Failed to load models at startup. Error: {str(e)}")
     raise
@@ -125,17 +130,21 @@ async def predict(file: UploadFile = File(...)):
     
     except Exception as e:
         logger.error(f"Error during prediction process: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during prediction")
+        raise HTTPException(status_code=500, detail=f"Internal server error during prediction: {str(e)}")
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("API is starting up")
+    logger.info(f"FastAPI version: {fastapi.__version__}")
+    logger.info(f"Uvicorn version: {uvicorn.__version__}")
+    logger.info(f"TensorFlow version: {tf.__version__}")
+    logger.info(f"NumPy version: {np.__version__}")
+    logger.info(f"Pillow version: {Image.__version__}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("API is shutting down")
 
 if __name__ == "__main__":
-    import uvicorn
     logger.info("Starting the API server")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
