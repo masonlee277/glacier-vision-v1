@@ -16,7 +16,7 @@ import sys
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
-
+data/model_weights/riverNet/retrained/model_weights_epoch_70.h5
 
 from utils import normalize_to_8bit, full_prediction_tiff, compile_model, mean_iou, dice_lossV1
 
@@ -43,7 +43,7 @@ def load_models():
     logger.info("Starting to load models")
     
     # Load RiverNet models
-    model_weights_dir = "data/model_weights/riverNet/RiverNet_checkpoint_dir/retrained"
+    model_weights_dir = "data/model_weights/riverNet/retrained"
     checkpoints = [
         os.path.join(model_weights_dir, f"model_weights_epoch_{epoch}.h5")
         for epoch in [80, 70, 90, 100]
