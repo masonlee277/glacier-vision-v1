@@ -10,6 +10,9 @@ import logging
 from datetime import datetime
 
 # Import your utility functions
+# add utils to the path 
+import sys
+sys.path.append('..')
 from utils import normalize_to_8bit, full_prediction_tiff, compile_model, mean_iou, dice_lossV1
 
 # Set up logging
