@@ -176,6 +176,76 @@ def check_segmap_zeroes(seg_map):
 #########################################################################
 
 from skimage.transform import resize
+import numpy as np
+
+def ensure_minimum_size(image, min_size=512):
+    """
+    Upscales an image to ensure its smallest dimension is at least the specified minimum size.
+
+    Args:
+    image (numpy.ndarray): Input image array.
+    min_size (int): Minimum size for the smallest dimension (default: 512).
+
+    Returns:
+    numpy.ndarray: Resized image with the smallest dimension at least 'min_size' pixels.
+                   If the input image is already large enough, it is returned unchanged.
+    """
+    # Get current image dimensions
+    height, width = image.shape[:2]
+    
+    # Check if resizing is necessary
+    if height >= min_size and width >= min_size:
+        return image
+    
+    # Calculate scaling factor
+    scale = max(min_size / height, min_size / width)
+    
+    # Calculate new dimensions
+    new_height = int(height * scale)
+    new_width = int(width * scale)
+    
+    # Resize the image
+    resized_image = resize(image, (new_height, new_width), 
+                           anti_aliasing=True, 
+                           preserve_range=True)
+    
+    # Ensure the output has the same data type as the input
+    resized_image = resized_image.astype(image.dtype)
+    
+    print(f"Image resized from {(height, width)} to {(new_height, new_width)}")
+    
+    return resized_image
+
+def revert_to_original_size(resized_image, original_shape):
+    """
+    Resizes an image back to its original dimensions if it was previously upscaled.
+
+    Args:
+    resized_image (numpy.ndarray): The potentially resized image array.
+    original_shape (tuple): The original shape of the image (height, width).
+
+    Returns:
+    numpy.ndarray: Image resized to the original dimensions if it was upscaled,
+                   or the input image if no resizing is needed.
+    """
+    current_height, current_width = resized_image.shape[:2]
+    original_height, original_width = original_shape[:2]
+
+    # Check if resizing is necessary
+    if (current_height, current_width) == (original_height, original_width):
+        return resized_image
+
+    # Resize the image back to original dimensions
+    original_image = resize(resized_image, (original_height, original_width), 
+                            anti_aliasing=True, 
+                            preserve_range=True)
+
+    # Ensure the output has the same data type as the input
+    original_image = original_image.astype(resized_image.dtype)
+
+    print(f"Image resized from {(current_height, current_width)} back to original size {(original_height, original_width)}")
+
+    return original_image
 
 
 def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
@@ -198,7 +268,9 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
   returns the output segmentation map.
 
   """
-    image = map
+    original_shape = np.shape(map)
+
+    image = ensure_minimum_size(map)
     chunk_size = 512 * 10
     print(f'Image Before Crop: {np.shape(image)}')
     print(f'Image After Crop: {np.shape(image)}')
@@ -313,12 +385,16 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
             # pred_map_full[i_max-chunk_border_thickness:i_max, j_min:j_max] = 1
             # pred_map_full[i_min:i_max, j_min:j_min+chunk_border_thickness] = 1
             # pred_map_full[i_min:i_max, j_max-chunk_border_thickness:j_max] = 1
+    pred_map_full = revert_to_original_size(pred_map_full, original_shape)
+
+
     if save_path is not None:
         try:
             tifffile.imsave(save_path, pred_map_full)
         except:
             print('saving failed')
     print('Retreiving Final Prediction')
+    print(f'Final size: {np.shape(pred_map_full)}')
     return pred_map_full
 
 
