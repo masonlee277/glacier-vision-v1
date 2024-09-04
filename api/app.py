@@ -8,6 +8,7 @@ from PIL import Image
 import io
 import logging
 from datetime import datetime
+import sys
 
 # Import your utility functions
 # add utils to the path 
