@@ -8,7 +8,7 @@ Glacier Vision is a cutting-edge project that uses deep learning techniques to m
 
 Our approach utilizes a novel dual U-Net architecture:
 
-1. 🌊 **RiverNet**: Translates satellite imagery into initial river segmentation maps.
+1. 🌊 **RiverNet**: Translaasdtes satellite imagery into initial river segmentation maps.
 2. 🔗 **SegConnector**: Refines these maps by bridging discontinuous river segments.
 
 This dual architecture addresses the challenge of river discontinuity often encountered in climate modeling, overcoming limitations of traditional morphological operators.
