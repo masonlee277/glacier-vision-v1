@@ -11,8 +11,12 @@ from datetime import datetime
 
 # Import your utility functions
 # add utils to the path 
-import sys
-sys.path.append('..')
+# Add the project root directory to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+
+
 from utils import normalize_to_8bit, full_prediction_tiff, compile_model, mean_iou, dice_lossV1
 
 # Set up logging
