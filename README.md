@@ -27,7 +27,7 @@ Both RiverNet and SegConnector use a U-Net architecture, which is particularly e
 
 - Python 3.7+
 - TensorFlow 2.x
-- NumPy, Pandas, Rasterio
+- NumPsy, Pandas, Rasterio
 
 ### 📦 Installation
 
