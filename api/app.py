@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 import uvicorn
 import rasterio
 from utils.image_utils import open_tiff, normalize_to_8bit
+from contextlib import contextmanager
 
 # Add the project root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -105,41 +106,37 @@ async def predict(file: UploadFile = File(...)):
         logger.info(f"Read file contents, size: {len(contents)} bytes")
         
         # Save the contents to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
+        with temporary_file() as temp_file:
             temp_file.write(contents)
             temp_file_path = temp_file.name
-        logger.info(f"Saved contents to temporary file: {temp_file_path}")
+            logger.info(f"Saved contents to temporary file: {temp_file_path}")
 
-        # Use open_tiff to read the image
-        image_array = open_tiff(temp_file_path)
-        if image_array is None:
-            raise ValueError("Failed to open TIFF image")
-        logger.info(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
+            # Use open_tiff to read the image
+            image_array = open_tiff(temp_file_path)
+            if image_array is None:
+                raise ValueError("Failed to open TIFF image")
+            logger.info(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
 
-        # Normalize the image
-        normalized_image = normalize_to_8bit(image_array)
-        logger.info(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
-        
-        # Make prediction
-        logger.info("Starting prediction process")
-        prediction = full_prediction_tiff(normalized_image, None, riverNet_models, seg_connector)
-        logger.info(f"Prediction completed, shape: {prediction.shape}, dtype: {prediction.dtype}")
-        
-        # Convert prediction to binary
-        binary_prediction = (prediction > 0.5).astype(np.uint8) * 255
-        logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
-        
-        # Save the prediction as an image
-        output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
-        output_buffer = io.BytesIO()
-        output_image.save(output_buffer, format="PNG")
-        output_buffer.seek(0)
-        logger.info("Saved prediction as PNG image")
-        
-        # Clean up the temporary file
-        os.unlink(temp_file_path)
-        logger.info(f"Cleaned up temporary file: {temp_file_path}")
-        
+            # Normalize the image
+            normalized_image = normalize_to_8bit(image_array)
+            logger.info(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
+            
+            # Make prediction
+            logger.info("Starting prediction process")
+            prediction = full_prediction_tiff(normalized_image, None, riverNet_models, seg_connector)
+            logger.info(f"Prediction completed, shape: {prediction.shape}, dtype: {prediction.dtype}")
+            
+            # Convert prediction to binary
+            binary_prediction = (prediction > 0.5).astype(np.uint8) * 255
+            logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
+            
+            # Save the prediction as an image
+            output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
+            output_buffer = io.BytesIO()
+            output_image.save(output_buffer, format="PNG")
+            output_buffer.seek(0)
+            logger.info("Saved prediction as PNG image")
+
         logger.info("Prediction process completed successfully")
         return FileResponse(output_buffer, media_type="image/png", filename="prediction.png")
     
