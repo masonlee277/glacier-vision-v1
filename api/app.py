@@ -9,13 +9,15 @@ import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 import uvicorn
+import rasterio
+from utils.image_utils import open_tiff, normalize_to_8bit
 
 # Add the project root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 # Import utility functions
-from utils import normalize_to_8bit, full_prediction_tiff, compile_model, mean_iou, dice_lossV1
+from utils import full_prediction_tiff, compile_model, mean_iou, dice_lossV1
 
 # Set up logging
 log_dir = os.path.join('data', 'logs')
@@ -94,16 +96,22 @@ async def predict(file: UploadFile = File(...)):
     logger.info(f"Received prediction request for file: {file.filename}")
     
     try:
-        # Read and preprocess the image
+        # Read the file contents
         contents = await file.read()
         logger.debug(f"Read file contents, size: {len(contents)} bytes")
         
-        image = Image.open(io.BytesIO(contents))
-        logger.debug(f"Opened image, format: {image.format}, size: {image.size}, mode: {image.mode}")
+        # Save the contents to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
+            temp_file.write(contents)
+            temp_file_path = temp_file.name
+
+        # Use open_tiff to read the image
+        image_array = open_tiff(temp_file_path)
+        logger.debug(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
         
-        image_array = np.array(image)
-        logger.debug(f"Converted image to numpy array, shape: {image_array.shape}, dtype: {image_array.dtype}")
-        
+        if image_array is None:
+            raise ValueError("Failed to open TIFF image")
+
         # Normalize the image
         normalized_image = normalize_to_8bit(image_array)
         logger.debug(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
@@ -119,11 +127,14 @@ async def predict(file: UploadFile = File(...)):
         logger.debug(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
         
         # Save the prediction as an image
-        output_image = Image.fromarray(binary_prediction)
+        output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
         output_buffer = io.BytesIO()
         output_image.save(output_buffer, format="PNG")
         output_buffer.seek(0)
         logger.info("Saved prediction as PNG image")
+        
+        # Clean up the temporary file
+        os.unlink(temp_file_path)
         
         logger.info("Prediction process completed successfully")
         return FileResponse(output_buffer, media_type="image/png", filename="prediction.png")

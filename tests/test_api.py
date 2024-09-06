@@ -5,6 +5,7 @@ from httpx import AsyncClient
 import asyncio
 from PIL import Image
 import io
+import tempfile
 
 # Add the project root to the Python path
 import sys
