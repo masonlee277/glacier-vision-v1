@@ -13,6 +13,7 @@ import uvicorn
 import rasterio
 from utils.image_utils import open_tiff, normalize_to_8bit
 from contextlib import contextmanager
+import uuid
 
 # Add the project root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -140,14 +141,19 @@ async def predict(file: UploadFile = File(...)):
             logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
             
             # Save the prediction as an image
+            output_dir = os.path.join('data', 'outputs', 'pred')
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Generate a unique filename
+            unique_filename = f"prediction_{uuid.uuid4().hex}.png"
+            output_path = os.path.join(output_dir, unique_filename)
+            
             output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
-            output_buffer = io.BytesIO()
-            output_image.save(output_buffer, format="PNG")
-            output_buffer.seek(0)
-            logger.info("Saved prediction as PNG image")
+            output_image.save(output_path)
+            logger.info(f"Saved prediction as PNG image: {output_path}")
 
         logger.info("Prediction process completed successfully")
-        return FileResponse(output_buffer, media_type="image/png", filename="prediction.png")
+        return FileResponse(output_path, media_type="image/png", filename=unique_filename)
     
     except Exception as e:
         logger.error(f"Error during prediction process: {str(e)}", exc_info=True)
