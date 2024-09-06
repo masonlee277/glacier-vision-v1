@@ -147,6 +147,7 @@ async def predict(file: UploadFile = File(...)):
             # Generate a unique filename
             unique_filename = f"prediction_{uuid.uuid4().hex}.png"
             output_path = os.path.join(output_dir, unique_filename)
+            logger.info(f"Saving prediction as PNG image: {output_path}")
             
             output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
             output_image.save(output_path)

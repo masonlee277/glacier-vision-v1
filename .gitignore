@@ -5,3 +5,4 @@ data/sat_images
 /appmap
 segment-anything-2
 wandb
+data/outputs/

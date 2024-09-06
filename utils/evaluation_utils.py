@@ -387,6 +387,13 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
             # pred_map_full[i_min:i_max, j_max-chunk_border_thickness:j_max] = 1
     pred_map_full = revert_to_original_size(pred_map_full, original_shape)
 
+    try:
+        mask = (map == 0)
+        pred_map_full = pred_map_full * ~mask
+
+    except:
+        mask = (map[:,:,0] == 0)
+        pred_map_full = pred_map_full * ~mask
 
     if save_path is not None:
         try:
