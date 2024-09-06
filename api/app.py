@@ -96,6 +96,15 @@ except Exception as e:
 # Reduce multipart debug logging
 logging.getLogger("multipart").setLevel(logging.WARNING)
 
+@contextmanager
+def temporary_file(suffix='.tif'):
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        yield temp_file
+    finally:
+        temp_file.close()
+        os.unlink(temp_file.name)
+
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     logger.info(f"Received prediction request for file: {file.filename}")

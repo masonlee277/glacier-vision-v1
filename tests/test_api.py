@@ -10,7 +10,7 @@ import shutil
 
 # Add the project root to the Python path
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from api.app import app
 
