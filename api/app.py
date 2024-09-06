@@ -3,6 +3,7 @@ import sys
 import logging
 from datetime import datetime
 import io
+import tempfile
 import numpy as np
 from PIL import Image
 import tensorflow as tf
@@ -91,6 +92,9 @@ except Exception as e:
     logger.critical(f"Failed to load models at startup. Error: {str(e)}")
     raise
 
+# Reduce multipart debug logging
+logging.getLogger("multipart").setLevel(logging.WARNING)
+
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     logger.info(f"Received prediction request for file: {file.filename}")
@@ -98,33 +102,32 @@ async def predict(file: UploadFile = File(...)):
     try:
         # Read the file contents
         contents = await file.read()
-        logger.debug(f"Read file contents, size: {len(contents)} bytes")
+        logger.info(f"Read file contents, size: {len(contents)} bytes")
         
         # Save the contents to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
             temp_file.write(contents)
             temp_file_path = temp_file.name
+        logger.info(f"Saved contents to temporary file: {temp_file_path}")
 
         # Use open_tiff to read the image
         image_array = open_tiff(temp_file_path)
-        logger.debug(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
-        
         if image_array is None:
             raise ValueError("Failed to open TIFF image")
+        logger.info(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
 
         # Normalize the image
         normalized_image = normalize_to_8bit(image_array)
-        logger.debug(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
+        logger.info(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
         
         # Make prediction
         logger.info("Starting prediction process")
         prediction = full_prediction_tiff(normalized_image, None, riverNet_models, seg_connector)
-        logger.info("Prediction completed")
-        logger.debug(f"Prediction shape: {prediction.shape}, dtype: {prediction.dtype}")
+        logger.info(f"Prediction completed, shape: {prediction.shape}, dtype: {prediction.dtype}")
         
         # Convert prediction to binary
         binary_prediction = (prediction > 0.5).astype(np.uint8) * 255
-        logger.debug(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
+        logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
         
         # Save the prediction as an image
         output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
@@ -135,6 +138,7 @@ async def predict(file: UploadFile = File(...)):
         
         # Clean up the temporary file
         os.unlink(temp_file_path)
+        logger.info(f"Cleaned up temporary file: {temp_file_path}")
         
         logger.info("Prediction process completed successfully")
         return FileResponse(output_buffer, media_type="image/png", filename="prediction.png")
@@ -146,11 +150,7 @@ async def predict(file: UploadFile = File(...)):
 @app.on_event("startup")
 async def startup_event():
     logger.info("API is starting up")
-    logger.info(f"FastAPI version: {fastapi.__version__}")
-    logger.info(f"Uvicorn version: {uvicorn.__version__}")
-    logger.info(f"TensorFlow version: {tf.__version__}")
-    logger.info(f"NumPy version: {np.__version__}")
-    logger.info(f"Pillow version: {Image.__version__}")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():

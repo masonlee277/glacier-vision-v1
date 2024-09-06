@@ -47,7 +47,10 @@ async def test_predict_endpoint(test_client):
     except IOError:
         pytest.fail("Response content is not a valid image")
 
-    # Additional assertions can be added here to verify the prediction results
+    # Save the response content to a file for manual inspection
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
+        temp_file.write(response.content)
+        print(f"Prediction result saved to: {temp_file.name}")
 
 if __name__ == "__main__":
     pytest.main([__file__])
