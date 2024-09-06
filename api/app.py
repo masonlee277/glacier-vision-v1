@@ -65,7 +65,7 @@ def load_models():
             raise
     
     # Load SegConnector model
-    seg_connector_path = os.path.join(project_root, 'data/model_weights/segConnector/wandb_artifacts/model-training_on_own_predictions:v35')
+    seg_connector_path = os.path.join(project_root, 'data/model_weights/segConnector/wandb_artifacts/model-training_on_own_predictions_v35')
     logger.debug(f"Loading SegConnector model from: {seg_connector_path}")
     try:
         seg_connector = tf.keras.models.load_model(
