@@ -21,7 +21,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
 from utils.image_utils import open_tiff, normalize_to_8bit
-from utils.evaluation_utils import process_and_predict_tiff
+from utils.evaluation_utils import process_and_predict_tiff, predict_from_tiffV1, connect_rivers
 from utils import compile_model, mean_iou, dice_lossV1
 from utils.logger_utils import Logger
 from api.config import settings
@@ -263,6 +263,53 @@ async def get_prediction(prediction_id: str):
     finally:
         del prediction_storage[prediction_id]
         logger.info(f"Removed prediction ID {prediction_id} from storage")
+
+@app.post("/connect_rivers/", summary="Connect existing river maps", response_description="PNG image of connected rivers")
+async def connect_rivers_endpoint(file: UploadFile = File(...)):
+    """
+    Connect existing river maps using only the SegConnector model.
+
+    - **file**: TIFF or PNG file of an existing river map to process
+    
+    Returns a PNG image of the connected river map.
+    """
+    logger.info(f"Received connect rivers request for file: {file.filename}")
+    
+    try:
+        contents = await file.read()
+        
+        # Determine file type and open accordingly
+        if file.filename.lower().endswith('.tif') or file.filename.lower().endswith('.tiff'):
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
+                temp_file.write(contents)
+                temp_file_path = temp_file.name
+            
+            logger.info(f"Saved uploaded TIFF file to temporary location: {temp_file_path}")
+            image_array = open_tiff(temp_file_path)
+        elif file.filename.lower().endswith('.png'):
+            image = Image.open(io.BytesIO(contents))
+            image_array = np.array(image)
+            logger.info(f"Opened PNG image, shape: {image_array.shape}")
+        else:
+            raise ValueError("Unsupported file format. Please upload a TIFF or PNG file.")
+
+        if image_array is None:
+            raise ValueError("Failed to open image")
+
+        logger.info(f"Opened image, shape: {image_array.shape}, dtype: {image_array.dtype}")
+        
+        output_path, unique_filename = connect_rivers(image_array, seg_connector, settings.OUTPUT_DIR)
+        
+        logger.info("River connection process completed successfully")
+        return FileResponse(output_path, media_type="image/png", filename=unique_filename)
+    
+    except Exception as e:
+        logger.error(f"Error during river connection process: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error during river connection: {str(e)}")
+    finally:
+        if 'temp_file_path' in locals():
+            os.unlink(temp_file_path)
+            logger.info(f"Cleaned up temporary file: {temp_file_path}")
 
 @app.on_event("startup")
 async def startup_event():

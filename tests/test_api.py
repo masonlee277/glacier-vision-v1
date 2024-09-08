@@ -5,6 +5,7 @@ import asyncio
 from PIL import Image
 import io
 import logging
+import numpy as np
 
 # Add the project root to the Python path
 import sys
@@ -47,6 +48,12 @@ def test_tiff_file():
     )
     assert os.path.exists(tiff_path), f"TIFF file not found at {tiff_path}"
     return tiff_path
+
+@pytest.fixture(scope="module")
+def test_png_file():
+    png_path = os.path.join('data', 'test_data', 'output.png')
+    assert os.path.exists(png_path), f"PNG file not found at {png_path}"
+    return png_path
 
 def test_upload_endpoint(test_client, test_tiff_file):
     logger.info("Starting test_upload_endpoint")
@@ -133,6 +140,43 @@ def test_get_prediction_endpoint(test_client, test_predict_multiple_endpoint):
         pytest.fail("Response content is not a valid image")
 
     logger.info("test_get_prediction_endpoint completed successfully")
+
+def test_connect_rivers_endpoint(test_client, test_png_file):
+    logger.info("Starting test_connect_rivers_endpoint")
+    
+    with open(test_png_file, "rb") as png_file:
+        files = {"file": ("test_image.png", png_file, "image/png")}
+        
+        response = test_client.post("/connect_rivers/", files=files)
+
+    logger.info(f"Received response with status code: {response.status_code}")
+    assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
+    
+    logger.info(f"Response content type: {response.headers['content-type']}")
+    assert response.headers["content-type"] == "image/png", "Expected content-type to be image/png"
+
+    # Verify the response is a valid PNG image
+    try:
+        logger.info("Attempting to open response content as an image")
+        img = Image.open(io.BytesIO(response.content))
+        logger.info(f"Successfully opened image: size={img.size}, mode={img.mode}")
+        
+        # Additional checks for the connected rivers image
+        assert img.mode == "L", f"Expected grayscale image, but got mode {img.mode}"
+        
+        # Check if the image contains any white pixels (connected rivers)
+        img_array = np.array(img)
+        assert np.any(img_array > 0), "No connected rivers found in the image"
+        
+        logger.info("Connected rivers image verified successfully")
+    except IOError as e:
+        logger.error(f"Failed to open response content as an image: {str(e)}")
+        pytest.fail("Response content is not a valid image")
+    except AssertionError as e:
+        logger.error(f"Image verification failed: {str(e)}")
+        pytest.fail(str(e))
+
+    logger.info("test_connect_rivers_endpoint completed successfully")
 
 if __name__ == "__main__":
     pytest.main([__file__])
