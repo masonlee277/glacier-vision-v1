@@ -6,7 +6,6 @@ import asyncio
 from PIL import Image
 import io
 import logging
-import shutil
 import json
 
 # Add the project root to the Python path
@@ -60,14 +59,31 @@ def test_tiff_file():
     return tiff_path
 
 @pytest.mark.asyncio
+async def test_upload_endpoint(test_client, test_tiff_file):
+    logger.info("Starting test_upload_endpoint")
+    
+    with open(test_tiff_file, "rb") as tiff_file:
+        files = {"files": ("test_image.tif", tiff_file, "image/tiff")}
+        
+        logger.info("Sending POST request to /upload/ endpoint")
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post("/upload/", files=files)
+
+    logger.info(f"Received response with status code: {response.status_code}")
+    assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
+    
+    response_data = response.json()
+    assert "file_ids" in response_data, "Expected 'file_ids' in response"
+    assert len(response_data["file_ids"]) > 0, "Expected at least one file ID in response"
+    
+    logger.info("test_upload_endpoint completed successfully")
+    return response_data["file_ids"][0]
+
+@pytest.mark.asyncio
 async def test_predict_endpoint(test_client, test_tiff_file):
     logger.info("Starting test_predict_endpoint")
     
     with open(test_tiff_file, "rb") as tiff_file:
-        logger.info("Opened TIFF file")
-        file_size = os.path.getsize(test_tiff_file)
-        logger.info(f"TIFF file size: {file_size} bytes")
-        
         files = {"file": ("test_image.tif", tiff_file, "image/tiff")}
         
         logger.info("Sending POST request to /predict/ endpoint")
@@ -90,27 +106,6 @@ async def test_predict_endpoint(test_client, test_tiff_file):
         pytest.fail("Response content is not a valid image")
 
     logger.info("test_predict_endpoint completed successfully")
-
-@pytest.mark.asyncio
-async def test_upload_endpoint(test_client, test_tiff_file):
-    logger.info("Starting test_upload_endpoint")
-    
-    with open(test_tiff_file, "rb") as tiff_file:
-        files = {"files": ("test_image.tif", tiff_file, "image/tiff")}
-        
-        logger.info("Sending POST request to /upload/ endpoint")
-        async with AsyncClient(app=app, base_url="http://test") as ac:
-            response = await ac.post("/upload/", files=files)
-
-    logger.info(f"Received response with status code: {response.status_code}")
-    assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
-    
-    response_data = response.json()
-    assert "file_ids" in response_data, "Expected 'file_ids' in response"
-    assert len(response_data["file_ids"]) > 0, "Expected at least one file ID in response"
-    
-    logger.info("test_upload_endpoint completed successfully")
-    return response_data["file_ids"][0]
 
 @pytest.mark.asyncio
 async def test_predict_multiple_endpoint(test_client, test_upload_endpoint):
