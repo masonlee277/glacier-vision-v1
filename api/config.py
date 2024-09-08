@@ -1,5 +1,5 @@
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
