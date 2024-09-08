@@ -14,6 +14,68 @@ logger = Logger('evaluation_utils')
 import multiprocessing
 from .image_utils import open_tiff, normalize_to_8bit
 
+
+import numpy as np
+from PIL import Image
+import uuid
+import os
+from .image_utils import open_tiff, normalize_to_8bit
+from .logger_utils import Logger
+
+logger = Logger('evaluation_utils')
+
+def connect_rivers(image_array: np.ndarray, seg_connector, output_dir: str = None) -> tuple:
+    """
+    Connect rivers in the given image using the SegConnector model.
+
+    Args:
+    image_array (np.ndarray): Input image array (can be from TIFF or PNG).
+    seg_connector: SegConnector model for refining predictions.
+    output_dir (str, optional): Directory to save the output PNG. If None, a temporary file is created.
+
+    Returns:
+    tuple: (output_path, unique_filename)
+        output_path (str): Full path to the saved connected rivers PNG file.
+        unique_filename (str): Filename of the saved connected rivers PNG file.
+    """
+    logger.info("Starting connect_rivers process")
+    logger.debug(f"Input image shape: {image_array.shape}, dtype: {image_array.dtype}")
+
+    # Normalize the image if it's not already in 8-bit format
+    if image_array.dtype != np.uint8:
+        image_array = normalize_to_8bit(image_array)
+        logger.info(f"Normalized image, new shape: {image_array.shape}, dtype: {image_array.dtype}")
+
+    # Apply SegConnector multiple times
+    seg_map = image_array
+    for i in range(5):  # Apply 5 times, adjust as needed
+        logger.info(f"Applying SegConnector, iteration {i+1}")
+        seg_map = predict_from_tiffV1(seg_map, seg_connector, fix_lines=True, resize=False, tile_size=512, overlap=150)
+        seg_map = np.where(seg_map > 0.1, 1, 0)
+        if seg_map.ndim == 2:
+            seg_map = np.expand_dims(seg_map, axis=-1)
+
+    # Convert to binary
+    binary_prediction = (seg_map > 0.5).astype(np.uint8) * 255
+    logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
+
+    # Prepare output directory
+    if output_dir is None:
+        output_dir = os.path.join('data', 'outputs', 'connected_rivers')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save the prediction as an image
+    unique_filename = f"connected_rivers_{uuid.uuid4().hex}.png"
+    output_path = os.path.join(output_dir, unique_filename)
+    logger.info(f"Saving connected rivers image: {output_path}")
+
+    output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
+    output_image.save(output_path)
+    logger.info(f"Saved connected rivers image: {output_path}")
+
+    return output_path, unique_filename
+
+
 def process_and_predict_tiff(tiff_path: str, riverNet_models: list, seg_connector, output_dir: str = None) -> tuple:
     """
     Process a TIFF file, make predictions using RiverNet and SegConnector models, and save the result.
