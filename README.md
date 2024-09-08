@@ -1,14 +1,14 @@
-# 🏔️ Glacier Vision: High-Resolution Mapping of Supra-Glacier Rivers 🌊
+# 🏔️ Glacier Vision: High-Resolution Mapping of Supra-Glacial Rivers 🌊
 
 ## 📊 Overview
 
-Glacier Vision is a cutting-edge project that uses deep learning techniques to map supra-glacial rivers at an unprecedented 1m spatial resolution. This repository contains the code and models for high-resolution mapping of river networks on the Greenland Ice Sheet, leveraging advanced convolutional neural networks (CNNs) and innovative techniques in remote sensing and machine learning.
+Glacier Vision is a cutting-edge project that leverages deep learning techniques to map supra-glacial rivers at an unprecedented 1m spatial resolution. This repository contains the code, models, and API for high-resolution mapping of river networks on the Greenland Ice Sheet, utilizing advanced convolutional neural networks (CNNs) and innovative techniques in remote sensing and machine learning.
 
 ## 🧠 Model Architecture
 
 Our approach utilizes a novel dual U-Net architecture:
 
-1. 🌊 **RiverNet**: Translaasdtes satellite imagery into initial river segmentation maps.
+1. 🌊 **RiverNet**: Translates satellite imagery into initial river segmentation maps.
 2. 🔗 **SegConnector**: Refines these maps by bridging discontinuous river segments.
 
 This dual architecture addresses the challenge of river discontinuity often encountered in climate modeling, overcoming limitations of traditional morphological operators.
@@ -27,15 +27,39 @@ Both RiverNet and SegConnector use a U-Net architecture, which is particularly e
 
 - Python 3.7+
 - TensorFlow 2.x
-- NumPsy, Pandas, Rasterio
+- NumPy, Pandas, Rasterio
+- FastAPI (for API functionality)
 
 ### 📦 Installation
 
-```bash
-git clone https://github.com/your-repo/glacier-vision.git
-cd glacier-vision
-pip install -r requirements.txt
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/glacier-vision.git
+   cd glacier-vision
+   ```
+
+2. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Set up the configuration:
+   - Copy the `config.yaml.example` to `config.yaml`
+   - Update the paths in `config.yaml` to match your local setup
+
+## 🖥️ Usage
+
+### 🌐 API
+
+Our FastAPI-based API provides an easy way to interact with the Glacier Vision model. Here are the main endpoints:
+
+1. **POST /upload/**: Upload TIFF files for processing.
+2. **POST /predict/**: Generate predictions for a single TIFF file.
+3. **POST /predict_multiple/**: Generate predictions for multiple TIFF files.
+4. **GET /prediction/{prediction_id}**: Retrieve a specific prediction.
+5. **POST /connect_rivers/**: Connect existing river maps using SegConnector.
+
+To run the API:
 
 ## 🖥️ Running Inference
 
