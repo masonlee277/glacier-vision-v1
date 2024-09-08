@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 import uvicorn
 from contextlib import contextmanager
 import uuid
@@ -94,6 +94,42 @@ def temporary_file(suffix='.tif'):
 
 class PredictionRequest(BaseModel):
     file_ids: List[str]
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """
+    Welcome page for the Glacier Vision API.
+    """
+    return HTMLResponse(content="""
+    <html>
+        <head>
+            <title>Welcome to Glacier Vision</title>
+        </head>
+        <body>
+            <h1>Welcome to Glacier Vision API</h1>
+            <p>This API provides endpoints for predicting supra-glacial rivers from satellite imagery.</p>
+            <p>Visit <a href="/docs">/docs</a> for the API documentation.</p>
+        </body>
+    </html>
+    """)
+
+@app.get("/ping")
+async def ping():
+    """
+    Ping endpoint to check if the API is running.
+    """
+    return {"status": "ok", "message": "Glacier Vision API is running"}
+
+@app.get("/routes")
+async def get_routes():
+    """
+    Get all available API routes.
+    """
+    routes = [
+        {"path": route.path, "name": route.name, "methods": route.methods}
+        for route in app.routes
+    ]
+    return JSONResponse(content={"routes": routes})
 
 @app.post("/upload/", summary="Upload TIFF files", response_description="List of file IDs")
 async def upload_files(files: List[UploadFile] = File(...)):
@@ -221,6 +257,7 @@ async def startup_event():
     logger.info("API is starting up")
     os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    logger.info("Welcome to Glacier Vision API")
 
 @app.on_event("shutdown")
 async def shutdown_event():
