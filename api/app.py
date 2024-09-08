@@ -38,7 +38,7 @@ def get_settings():
     return settings
 
 # Helper function to load models
-def load_models(settings: Settings = Depends(get_settings)):
+def load_models(settings: settings = Depends(get_settings)):
     logger.info("Starting to load models")
     
     # Load RiverNet models

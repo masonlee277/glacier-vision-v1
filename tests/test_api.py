@@ -65,9 +65,7 @@ async def test_upload_endpoint(test_client, test_tiff_file):
     with open(test_tiff_file, "rb") as tiff_file:
         files = {"files": ("test_image.tif", tiff_file, "image/tiff")}
         
-        logger.info("Sending POST request to /upload/ endpoint")
-        async with AsyncClient(app=app, base_url="http://test") as ac:
-            response = await ac.post("/upload/", files=files)
+        response = test_client.post("/upload/", files=files)
 
     logger.info(f"Received response with status code: {response.status_code}")
     assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
@@ -86,9 +84,7 @@ async def test_predict_endpoint(test_client, test_tiff_file):
     with open(test_tiff_file, "rb") as tiff_file:
         files = {"file": ("test_image.tif", tiff_file, "image/tiff")}
         
-        logger.info("Sending POST request to /predict/ endpoint")
-        async with AsyncClient(app=app, base_url="http://test") as ac:
-            response = await ac.post("/predict/", files=files)
+        response = test_client.post("/predict/", files=files)
 
     logger.info(f"Received response with status code: {response.status_code}")
     assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
@@ -115,9 +111,7 @@ async def test_predict_multiple_endpoint(test_client, test_upload_endpoint):
     
     data = {"file_ids": [file_id]}
     
-    logger.info("Sending POST request to /predict_multiple/ endpoint")
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.post("/predict_multiple/", json=data)
+    response = test_client.post("/predict_multiple/", json=data)
 
     logger.info(f"Received response with status code: {response.status_code}")
     assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
@@ -135,9 +129,7 @@ async def test_get_prediction_endpoint(test_client, test_predict_multiple_endpoi
     
     prediction_id = await test_predict_multiple_endpoint
     
-    logger.info(f"Sending GET request to /prediction/{prediction_id} endpoint")
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(f"/prediction/{prediction_id}")
+    response = test_client.get(f"/prediction/{prediction_id}")
 
     logger.info(f"Received response with status code: {response.status_code}")
     assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
