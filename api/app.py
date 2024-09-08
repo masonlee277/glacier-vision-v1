@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 import uvicorn
 from contextlib import contextmanager
@@ -29,6 +30,15 @@ logger = Logger('api')
 app = FastAPI(title="Glacier Vision API", 
               description="API for predicting supra-glacial rivers from satellite imagery",
               version="1.0.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # In-memory storage for uploaded files and predictions
 file_storage = {}
