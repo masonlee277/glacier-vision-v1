@@ -5,12 +5,14 @@ import tempfile
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from sse_starlette.sse import EventSourceResponse
 import uvicorn
 from contextlib import contextmanager
 import uuid
+import asyncio
 from typing import List
 from pydantic import BaseModel
 
@@ -194,47 +196,47 @@ async def predict(file: UploadFile = File(...)):
             os.unlink(temp_file_path)
             logger.info(f"Cleaned up temporary file: {temp_file_path}")
 
-@app.post("/predict_multiple/", summary="Predict on multiple TIFF files", response_description="List of prediction IDs")
-async def predict_multiple(request: PredictionRequest):
-    """
-    Make predictions on multiple previously uploaded TIFF files.
+@app.post("/predict_multiple/", summary="Predict on multiple TIFF files", response_description="Stream of prediction progress")
+async def predict_multiple(request: Request, prediction_request: PredictionRequest):
+    async def event_generator():
+        predictions = []
+        for file_id in prediction_request.file_ids:
+            if file_id not in file_storage:
+                yield {"event": "error", "data": f"File ID {file_id} not found"}
+                continue
+            
+            contents = file_storage[file_id]
+            
+            try:
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
+                    temp_file.write(contents)
+                    temp_file_path = temp_file.name
+                
+                yield {"event": "info", "data": f"Processing file ID: {file_id}"}
+                
+                output_path, unique_filename = process_and_predict_tiff(temp_file_path, riverNet_models, seg_connector, settings.OUTPUT_DIR)
+                
+                prediction_id = os.path.splitext(unique_filename)[0]
+                prediction_storage[prediction_id] = output_path
+                predictions.append({"file_id": file_id, "prediction_id": prediction_id})
+                
+                yield {"event": "success", "data": f"Processed file ID: {file_id}, prediction ID: {prediction_id}"}
+                
+            except Exception as e:
+                error_message = f"Error during prediction process for file {file_id}: {str(e)}"
+                logger.error(error_message, exc_info=True)
+                yield {"event": "error", "data": error_message}
+            finally:
+                if 'temp_file_path' in locals():
+                    os.unlink(temp_file_path)
+                    yield {"event": "info", "data": f"Cleaned up temporary file for {file_id}"}
+            
+            # Add a small delay to prevent overwhelming the client
+            await asyncio.sleep(0.1)
+        
+        yield {"event": "complete", "data": "Prediction process completed for all files"}
 
-    - **file_ids**: List of file IDs to process
-    
-    Returns a list of prediction IDs that can be used to retrieve the results.
-    """
-    logger.info(f"Received prediction request for multiple files")
-    
-    predictions = []
-    for file_id in request.file_ids:
-        if file_id not in file_storage:
-            raise HTTPException(status_code=400, detail=f"File ID {file_id} not found")
-        
-        contents = file_storage[file_id]
-        
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
-                temp_file.write(contents)
-                temp_file_path = temp_file.name
-            
-            logger.info(f"Processing file ID: {file_id}")
-            
-            output_path, unique_filename = process_and_predict_tiff(temp_file_path, riverNet_models, seg_connector, settings.OUTPUT_DIR)
-            
-            prediction_id = os.path.splitext(unique_filename)[0]
-            prediction_storage[prediction_id] = output_path
-            predictions.append({"file_id": file_id, "prediction_id": prediction_id})
-            
-        except Exception as e:
-            logger.error(f"Error during prediction process for file {file_id}: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Internal server error during prediction: {str(e)}")
-        finally:
-            if 'temp_file_path' in locals():
-                os.unlink(temp_file_path)
-                logger.info(f"Cleaned up temporary file: {temp_file_path}")
-    
-    logger.info("Prediction process completed successfully for all files")
-    return {"message": "Predictions completed", "predictions": predictions}
+    return EventSourceResponse(event_generator())
 
 @app.get("/prediction/{prediction_id}", summary="Retrieve a prediction", response_description="PNG image of prediction")
 async def get_prediction(prediction_id: str):
