@@ -7,6 +7,7 @@ from PIL import Image
 import io
 import logging
 import shutil
+import json
 
 # Add the project root to the Python path
 import sys
@@ -49,22 +50,22 @@ def event_loop():
     logger.info("Closing event loop")
     loop.close()
 
-@pytest.mark.asyncio
-async def test_predict_endpoint(test_client):
-    logger.info("Starting test_predict_endpoint")
-    
+@pytest.fixture(scope="module")
+def test_tiff_file():
     tiff_path = os.path.join(
         'data', 'mark_validation',
         'clip_WV03_20220801143842_1040010079411F00_22AUG01143842-M1BS-506796344080_01_P001_u16rf3413_RGB_COMP_CROPPED.tif'
     )
-    
-    logger.info(f"TIFF file path: {tiff_path}")
     assert os.path.exists(tiff_path), f"TIFF file not found at {tiff_path}"
-    logger.info("TIFF file exists")
+    return tiff_path
 
-    with open(tiff_path, "rb") as tiff_file:
+@pytest.mark.asyncio
+async def test_predict_endpoint(test_client, test_tiff_file):
+    logger.info("Starting test_predict_endpoint")
+    
+    with open(test_tiff_file, "rb") as tiff_file:
         logger.info("Opened TIFF file")
-        file_size = os.path.getsize(tiff_path)
+        file_size = os.path.getsize(test_tiff_file)
         logger.info(f"TIFF file size: {file_size} bytes")
         
         files = {"file": ("test_image.tif", tiff_file, "image/tiff")}
@@ -88,29 +89,77 @@ async def test_predict_endpoint(test_client):
         logger.error(f"Failed to open response content as an image: {str(e)}")
         pytest.fail("Response content is not a valid image")
 
-    # Save the response content to a specific file, overwriting if it exists
-    output_dir = os.path.join('data', 'outputs', 'test')
-    os.makedirs(output_dir, exist_ok=True)
-    output_file = os.path.join(output_dir, 'test_file.png')
-    
-    with open(output_file, 'wb') as f:
-        f.write(response.content)
-    logger.info(f"Prediction result saved to: {output_file}")
-    print(f"Prediction result saved to: {output_file}")
-
-    # Validate that we can get output
-    assert os.path.exists(output_file), f"Output file not found at {output_file}"
-    assert os.path.getsize(output_file) > 0, "Output file is empty"
-
-    # Verify that the saved file is a valid image
-    try:
-        with Image.open(output_file) as img:
-            logger.info(f"Successfully opened saved image: size={img.size}, mode={img.mode}")
-    except IOError as e:
-        logger.error(f"Failed to open saved image: {str(e)}")
-        pytest.fail("Saved file is not a valid image")
-
     logger.info("test_predict_endpoint completed successfully")
+
+@pytest.mark.asyncio
+async def test_upload_endpoint(test_client, test_tiff_file):
+    logger.info("Starting test_upload_endpoint")
+    
+    with open(test_tiff_file, "rb") as tiff_file:
+        files = {"files": ("test_image.tif", tiff_file, "image/tiff")}
+        
+        logger.info("Sending POST request to /upload/ endpoint")
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post("/upload/", files=files)
+
+    logger.info(f"Received response with status code: {response.status_code}")
+    assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
+    
+    response_data = response.json()
+    assert "file_ids" in response_data, "Expected 'file_ids' in response"
+    assert len(response_data["file_ids"]) > 0, "Expected at least one file ID in response"
+    
+    logger.info("test_upload_endpoint completed successfully")
+    return response_data["file_ids"][0]
+
+@pytest.mark.asyncio
+async def test_predict_multiple_endpoint(test_client, test_upload_endpoint):
+    logger.info("Starting test_predict_multiple_endpoint")
+    
+    file_id = await test_upload_endpoint
+    
+    data = {"file_ids": [file_id]}
+    
+    logger.info("Sending POST request to /predict_multiple/ endpoint")
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post("/predict_multiple/", json=data)
+
+    logger.info(f"Received response with status code: {response.status_code}")
+    assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
+    
+    response_data = response.json()
+    assert "predictions" in response_data, "Expected 'predictions' in response"
+    assert len(response_data["predictions"]) > 0, "Expected at least one prediction in response"
+    
+    logger.info("test_predict_multiple_endpoint completed successfully")
+    return response_data["predictions"][0]["prediction_id"]
+
+@pytest.mark.asyncio
+async def test_get_prediction_endpoint(test_client, test_predict_multiple_endpoint):
+    logger.info("Starting test_get_prediction_endpoint")
+    
+    prediction_id = await test_predict_multiple_endpoint
+    
+    logger.info(f"Sending GET request to /prediction/{prediction_id} endpoint")
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(f"/prediction/{prediction_id}")
+
+    logger.info(f"Received response with status code: {response.status_code}")
+    assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}"
+    
+    logger.info(f"Response content type: {response.headers['content-type']}")
+    assert response.headers["content-type"] == "image/png", "Expected content-type to be image/png"
+
+    # Verify the response is a valid PNG image
+    try:
+        logger.info("Attempting to open response content as an image")
+        img = Image.open(io.BytesIO(response.content))
+        logger.info(f"Successfully opened image: size={img.size}, mode={img.mode}")
+    except IOError as e:
+        logger.error(f"Failed to open response content as an image: {str(e)}")
+        pytest.fail("Response content is not a valid image")
+
+    logger.info("test_get_prediction_endpoint completed successfully")
 
 if __name__ == "__main__":
     logger.info("Running test_api.py")

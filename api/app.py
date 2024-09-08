@@ -12,6 +12,9 @@ import rasterio
 from utils.image_utils import open_tiff, normalize_to_8bit
 from contextlib import contextmanager
 import uuid
+from typing import List
+from pydantic import BaseModel
+from utils.evaluation_utils import process_and_predict_tiff
 
 # Add the project root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -25,6 +28,10 @@ from utils.logger_utils import Logger
 logger = Logger('api')
 
 app = FastAPI()
+
+# In-memory storage for uploaded files and predictions
+file_storage = {}
+prediction_storage = {}
 
 # Helper function to load models
 def load_models():
@@ -83,59 +90,106 @@ def temporary_file(suffix='.tif'):
         temp_file.close()
         os.unlink(temp_file.name)
 
+class PredictionRequest(BaseModel):
+    file_ids: List[str]
+
+@app.post("/upload/")
+async def upload_files(files: List[UploadFile] = File(...)):
+    logger.info(f"Received upload request for {len(files)} files")
+    
+    uploaded_file_ids = []
+    for file in files:
+        file_id = str(uuid.uuid4())
+        contents = await file.read()
+        file_storage[file_id] = contents
+        uploaded_file_ids.append(file_id)
+        logger.info(f"File uploaded: {file.filename}, ID: {file_id}")
+    
+    return {"message": "Files uploaded successfully", "file_ids": uploaded_file_ids}
+
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     logger.info(f"Received prediction request for file: {file.filename}")
     
     try:
-        # Read the file contents
-        contents = await file.read()
-        logger.info(f"Read file contents, size: {len(contents)} bytes")
-        
-        # Save the contents to a temporary file
-        with temporary_file() as temp_file:
+        # Save the uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
+            contents = await file.read()
             temp_file.write(contents)
             temp_file_path = temp_file.name
-            logger.info(f"Saved contents to temporary file: {temp_file_path}")
-
-            # Use open_tiff to read the image
-            image_array = open_tiff(temp_file_path)
-            if image_array is None:
-                raise ValueError("Failed to open TIFF image")
-            logger.info(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
-
-            # Normalize the image
-            normalized_image = normalize_to_8bit(image_array)
-            logger.info(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
-            
-            # Make prediction
-            logger.info("Starting prediction process")
-            prediction = full_prediction_tiff(normalized_image, None, riverNet_models, seg_connector)
-            logger.info(f"Prediction completed, shape: {prediction.shape}, dtype: {prediction.dtype}")
-            
-            # Convert prediction to binary
-            binary_prediction = (prediction > 0.5).astype(np.uint8) * 255
-            logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
-            
-            # Save the prediction as an image
-            output_dir = os.path.join('data', 'outputs', 'pred')
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Generate a unique filename
-            unique_filename = f"prediction_{uuid.uuid4().hex}.png"
-            output_path = os.path.join(output_dir, unique_filename)
-            logger.info(f"Saving prediction as PNG image: {output_path}")
-            
-            output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
-            output_image.save(output_path)
-            logger.info(f"Saved prediction as PNG image: {output_path}")
-
+        
+        logger.info(f"Saved uploaded file to temporary location: {temp_file_path}")
+        
+        # Process and predict
+        output_path, unique_filename = process_and_predict_tiff(temp_file_path, riverNet_models, seg_connector)
+        
         logger.info("Prediction process completed successfully")
         return FileResponse(output_path, media_type="image/png", filename=unique_filename)
     
     except Exception as e:
         logger.error(f"Error during prediction process: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error during prediction: {str(e)}")
+    finally:
+        # Clean up the temporary file
+        if 'temp_file_path' in locals():
+            os.unlink(temp_file_path)
+            logger.info(f"Cleaned up temporary file: {temp_file_path}")
+
+@app.post("/predict_multiple/")
+async def predict_multiple(request: PredictionRequest):
+    logger.info(f"Received prediction request for multiple files")
+    
+    predictions = []
+    for file_id in request.file_ids:
+        if file_id not in file_storage:
+            raise HTTPException(status_code=400, detail=f"File ID {file_id} not found")
+        
+        contents = file_storage[file_id]
+        
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.tif') as temp_file:
+                temp_file.write(contents)
+                temp_file_path = temp_file.name
+            
+            logger.info(f"Processing file ID: {file_id}")
+            
+            output_path, unique_filename = process_and_predict_tiff(temp_file_path, riverNet_models, seg_connector)
+            
+            prediction_id = os.path.splitext(unique_filename)[0]
+            prediction_storage[prediction_id] = output_path
+            predictions.append({"file_id": file_id, "prediction_id": prediction_id})
+            
+        except Exception as e:
+            logger.error(f"Error during prediction process for file {file_id}: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Internal server error during prediction: {str(e)}")
+        finally:
+            # Clean up the temporary file
+            if 'temp_file_path' in locals():
+                os.unlink(temp_file_path)
+                logger.info(f"Cleaned up temporary file: {temp_file_path}")
+    
+    logger.info("Prediction process completed successfully for all files")
+    return {"message": "Predictions completed", "predictions": predictions}
+
+@app.get("/prediction/{prediction_id}")
+async def get_prediction(prediction_id: str):
+    logger.info(f"Received request for prediction ID: {prediction_id}")
+    
+    if prediction_id not in prediction_storage:
+        raise HTTPException(status_code=404, detail=f"Prediction ID {prediction_id} not found")
+    
+    output_path = prediction_storage[prediction_id]
+    logger.info(f"Retrieving prediction from: {output_path}")
+    
+    try:
+        return FileResponse(output_path, media_type="image/png", filename=os.path.basename(output_path))
+    except Exception as e:
+        logger.error(f"Error retrieving prediction: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error retrieving prediction: {str(e)}")
+    finally:
+        # Remove the prediction from storage
+        del prediction_storage[prediction_id]
+        logger.info(f"Removed prediction ID {prediction_id} from storage")
 
 @app.on_event("startup")
 async def startup_event():
