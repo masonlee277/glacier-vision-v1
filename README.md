@@ -63,38 +63,39 @@ To run the API:
 
 ## 🖥️ Running Inference
 
-We use `inference/model_inference.ipynb` for running the model. Here's a step-by-step guide:
+We use `inference/model_inference.ipynb` for running the model. Here's a simplified guide:
 
-1. **Load Model Weights**: 
+1. **Import necessary functions**:
    ```python
-   model_weights_dir = "data/model_weights/riverNet/RiverNet_checkpoint_dir/retrained"
-   ch = [os.path.join(model_weights_dir, f"model_weights_epoch_{epoch}.h5") for epoch in [80, 70, 90, 100]]
-   
-   riverNet_model_list = []
-   for c in ch:
-       ml_model = compile_model(512, 512)
-       ml_model.load_weights(c)
-       riverNet_model_list.append(ml_model)
+   from utils.evaluation_utils import load_models, process_and_predict_tiff
+   from utils.image_utils import open_tiff, normalize_to_8bit
    ```
 
-2. **Load SegConnector**:
+2. **Load Models**:
    ```python
-   seg_connector = tf.keras.models.load_model(
-       'data/model_weights/segConnector/wandb_artifacts/model-training_on_RiverNet_PredictionsV2:v29',
-       custom_objects={'mean_iou': mean_iou, 'dice_loss': dice_lossV1}
-   )
+   riverNet_models, seg_connector = load_models()
    ```
 
 3. **Prepare Input Data**:
    ```python
    input_tif_fp = 'path/to/your/input.tif'
-   input = open_tiff(input_tif_fp)
-   input = normalize_to_8bit(input)
+   input_image = open_tiff(input_tif_fp)
+   input_normalized = normalize_to_8bit(input_image)
    ```
 
 4. **Run Inference**:
    ```python
-   pred_map = full_prediction_tiff(input, save_path, riverNet_model_list, seg_connector)
+   output_path, unique_filename = process_and_predict_tiff(input_normalized, riverNet_models, seg_connector)
+   ```
+
+   This function processes the input image, makes predictions using RiverNet and SegConnector models, and saves the result.
+
+5. **View Results**:
+   The prediction is saved as a PNG file. You can open and view it using:
+   ```python
+   from PIL import Image
+   prediction = Image.open(output_path)
+   prediction.show()
    ```
 
 ## 🖥️ API Endpoints

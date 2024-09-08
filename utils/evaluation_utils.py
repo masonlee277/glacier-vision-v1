@@ -7,22 +7,47 @@ from .training_utils import *
 from .image_utils import *
 from .visualization_utils import *
 from .logger_utils import Logger
+import tensorflow as tf
+from api.config import settings
 
 # Create a logger for this file
 logger = Logger('evaluation_utils')
 
-import multiprocessing
-from .image_utils import open_tiff, normalize_to_8bit
-
-
-import numpy as np
-from PIL import Image
-import uuid
-import os
-from .image_utils import open_tiff, normalize_to_8bit
-from .logger_utils import Logger
-
-logger = Logger('evaluation_utils')
+def load_models():
+    logger.info("Starting to load models")
+    
+    # Load RiverNet models
+    checkpoints = [
+        os.path.join(settings.MODEL_WEIGHTS_DIR, f"model_weights_epoch_{epoch}.h5")
+        for epoch in [80, 70, 90, 100]
+    ]
+    
+    riverNet_models = []
+    for checkpoint in checkpoints:
+        logger.debug(f"Loading RiverNet model from checkpoint: {checkpoint}")
+        try:
+            model = compile_model(512, 512)
+            model.load_weights(checkpoint)
+            riverNet_models.append(model)
+            logger.info(f"Successfully loaded RiverNet model from {checkpoint}")
+        except Exception as e:
+            logger.error(f"Failed to load RiverNet model from {checkpoint}. Error: {str(e)}")
+            raise
+    
+    # Load SegConnector model
+    logger.debug(f"Loading SegConnector model from: {settings.SEG_CONNECTOR_PATH}")
+    try:
+        seg_connector = tf.keras.models.load_model(
+            settings.SEG_CONNECTOR_PATH,
+            custom_objects={'mean_iou': mean_iou, 'dice_loss': dice_lossV1}
+        )
+        logger.info("Successfully loaded SegConnector model")
+    except Exception as e:
+        logger.error(f"Failed to load SegConnector model. Error: {str(e)}")
+        raise
+    
+    logger.info("All models loaded successfully")
+    return riverNet_models, seg_connector
 
 def connect_rivers(image_array: np.ndarray, seg_connector, output_dir: str = None) -> tuple:
     """
