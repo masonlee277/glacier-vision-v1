@@ -1,7 +1,5 @@
 import os
 import sys
-import logging
-from datetime import datetime
 import io
 import tempfile
 import numpy as np
@@ -21,28 +19,10 @@ sys.path.append(project_root)
 
 # Import utility functions
 from utils import full_prediction_tiff, compile_model, mean_iou, dice_lossV1
+from utils.logger_utils import Logger
 
-# Set up logging
-log_dir = os.path.join('data', 'logs')
-os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, 'app_logs.log')
-
-# Clear the log file if it exists
-if os.path.exists(log_file):
-    open(log_file, 'w').close()
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler()
-    ]
-)
-
-logger = logging.getLogger(__name__)
-
-logger.info("Logging initialized. Previous logs cleared.")
+# Initialize logger
+logger = Logger('api')
 
 app = FastAPI()
 
@@ -93,9 +73,6 @@ try:
 except Exception as e:
     logger.critical(f"Failed to load models at startup. Error: {str(e)}")
     raise
-
-# Reduce multipart debug logging
-logging.getLogger("multipart").setLevel(logging.WARNING)
 
 @contextmanager
 def temporary_file(suffix='.tif'):
@@ -163,7 +140,6 @@ async def predict(file: UploadFile = File(...)):
 @app.on_event("startup")
 async def startup_event():
     logger.info("API is starting up")
-
 
 @app.on_event("shutdown")
 async def shutdown_event():

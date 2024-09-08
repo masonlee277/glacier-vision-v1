@@ -73,6 +73,23 @@ We use `inference/model_inference.ipynb` for running the model. Here's a step-by
    pred_map = full_prediction_tiff(input, save_path, riverNet_model_list, seg_connector)
    ```
 
+## 🖥️ API Endpoints
+
+Our project includes a FastAPI-based API for running inference. Here are the available endpoints:
+
+### POST /predict/
+
+This endpoint allows you to submit a TIFF image for prediction.
+
+- **Input**: A TIFF file uploaded as form-data with the key "file".
+- **Output**: A PNG image file containing the prediction results.
+- **Process**:
+  1. Receives the uploaded TIFF file.
+  2. Processes the image using our RiverNet and SegConnector models.
+  3. Returns a binary prediction map as a PNG file.
+
+#### Example usage:
+
 ## 🗺️ Data
 
 We use high-resolution satellite imagery from various sources:

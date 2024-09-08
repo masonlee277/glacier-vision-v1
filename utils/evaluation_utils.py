@@ -1,5 +1,4 @@
 # evaluation_utils.py
-# evaluation_utils.py
 from .common_imports import *
 from .common_utils import *
 from .data_utils import *
@@ -7,12 +6,16 @@ from .model_utils import *
 from .training_utils import *
 from .image_utils import *
 from .visualization_utils import *
+from .logger_utils import Logger
 
+# Create a logger for this file
+logger = Logger('evaluation_utils')
 
 import multiprocessing
 
 
 def predict_from_tiffV1(img: np.ndarray, model: Model, fix_lines: bool=False, resize: bool=False, tile_size: int=512, overlap: int=0) -> np.ndarray:
+    logger.info("Starting prediction from TIFF")
     """
     This function takes in a tiff image and a trained model, and returns the predicted image.
 
@@ -33,6 +36,7 @@ def predict_from_tiffV1(img: np.ndarray, model: Model, fix_lines: bool=False, re
     sess = tf.compat.v1.Session(config=config)
     set_session(sess)
     (width_im, height_im, channels) = np.shape(img)
+    logger.debug(f"Image shape: {img.shape}")
     print(width_im, height_im)
     if fix_lines:
         tile_df = tile_imageV1(img, tile_size, single_channel=True, overlap=overlap)
@@ -43,46 +47,44 @@ def predict_from_tiffV1(img: np.ndarray, model: Model, fix_lines: bool=False, re
     recon = reconstruct_image(pred_df, (width_im, height_im))
     del pred_df
     del tile_df
+    logger.info("Prediction completed")
     return np.array(recon)
 
 def ensemble_predict_from_tiffV1(img: np.ndarray, model_list: Model, fix_lines: bool=False, resize: bool=False, tile_size: int=512, overlap: int=0) -> np.ndarray:
-    """
-    This function takes in a tiff image and a trained model, and returns the predicted image.
+    logger.info("Starting ensemble_predict_from_tiffV1")
+    logger.debug(f"Input image shape: {img.shape}")
+    logger.debug(f"Number of models: {len(model_list)}")
+    logger.debug(f"Parameters: fix_lines={fix_lines}, resize={resize}, tile_size={tile_size}, overlap={overlap}")
 
-    Parameters:
-    img : np.ndarray - The tiff image to be predicted
-    model : Model - The trained model to be used for prediction
-    fix_lines : bool - A flag indicating whether to fix lines in the image (default: False)
-    resize : bool - A flag indicating whether to resize the image (default: False)
-    single_channel : bool - A flag indicating whether to use single channel or not (default: True)
-    tile_size : int - The size of each tile to be used for prediction (default: 512)
-
-    Returns:
-    np.ndarray : The predicted image
-    """
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
     config.log_device_placement = True
     sess = tf.compat.v1.Session(config=config)
     set_session(sess)
-    (width_im, height_im) = np.shape(img)[:2]
-    print(width_im, height_im)
+    
+    width_im, height_im = np.shape(img)[:2]
+    logger.debug(f"Image dimensions: {width_im}x{height_im}")
+    
     recon_fin = np.zeros(shape=np.shape(img)[:2], dtype=np.float64)
-    if fix_lines:
-        single_channel = True
-    else:
-        single_channel = False
+    single_channel = fix_lines
+    
     tile_df = tile_imageV1(img, tile_size, single_channel=single_channel, overlap=overlap)
+    logger.debug(f"Number of tiles: {len(tile_df)}")
+    
     num_model = len(model_list)
     scaling_factors = np.linspace(0, 1, num_model)
-    for (i, model) in enumerate(model_list):
-        print(f'MODEL PREDICTION: {i}')
+    
+    for i, model in enumerate(model_list):
+        logger.info(f'Processing MODEL PREDICTION: {i}')
         pred_df = predict_from_dataframe_v2(tile_df, model, single_channel=single_channel, resize=resize)
         recon = reconstruct_image(pred_df, (width_im, height_im))
         recon = recon * scaling_factors[i]
         recon_fin += recon.astype(np.float64)
+    
     del pred_df
     del tile_df
+    
+    logger.info("Finished ensemble_predict_from_tiffV1")
     return np.array(recon_fin / np.max(recon_fin))
 
 
@@ -217,74 +219,49 @@ def ensure_minimum_size(image, min_size=512):
     return resized_image
 
 def revert_to_original_size(resized_image, original_shape):
-    """
-    Resizes an image back to its original dimensions if it was previously upscaled.
+    logger.info("Starting revert_to_original_size")
+    logger.debug(f"Resized image shape: {resized_image.shape}")
+    logger.debug(f"Original shape: {original_shape}")
 
-    Args:
-    resized_image (numpy.ndarray): The potentially resized image array.
-    original_shape (tuple): The original shape of the image (height, width).
-
-    Returns:
-    numpy.ndarray: Image resized to the original dimensions if it was upscaled,
-                   or the input image if no resizing is needed.
-    """
     current_height, current_width = resized_image.shape[:2]
     original_height, original_width = original_shape[:2]
 
-    # Check if resizing is necessary
     if (current_height, current_width) == (original_height, original_width):
+        logger.info("No resizing needed, returning original image")
         return resized_image
 
-    # Resize the image back to original dimensions
     original_image = resize(resized_image, (original_height, original_width), 
                             anti_aliasing=True, 
                             preserve_range=True)
 
-    # Ensure the output has the same data type as the input
     original_image = original_image.astype(resized_image.dtype)
 
-    print(f"Image resized from {(current_height, current_width)} back to original size {(original_height, original_width)}")
-
+    logger.info(f"Image resized from {(current_height, current_width)} back to original size {(original_height, original_width)}")
     return original_image
 
 
 def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
-    """
-  Arguments:
-
-  map: a 2D array representing an image to be segmented
-  save_path: a filepath to the directory to which the final tiff will be saved
-  model_list: a list of ensemble learners to be run on satelliete data
-  model_lines: morphological neural network to be run over output of model_list
-
-  Summary:
-  The full_prediction_tiff function performs segmentation on an input image by
-  breaking it down into smaller chunks and applying a pre-trained segmentation
-  model to each chunk. It then reassembles the predicted segmentation maps for each
-  chunk into a single output segmentation map for the entire image. The function
-  uses a pre-defined checkpoint directory containing pre-trained models to perform
-  the segmentation. It prints the dimensions of the input image before and after
-  cropping, as well as the total number of chunks to be processed. The function
-  returns the output segmentation map.
-
-  """
+    logger.info("Starting full_prediction_tiff")
+    logger.debug(f"Input map shape: {map.shape}")
+    
     original_shape = np.shape(map)
+    logger.debug(f"Original shape: {original_shape}")
 
     image = ensure_minimum_size(map)
     chunk_size = 512 * 10
-    print(f'Image Before Crop: {np.shape(image)}')
-    print(f'Image After Crop: {np.shape(image)}')
-    image_height = image.shape[0]
-    image_width = image.shape[1]
+    logger.info(f'Image Before Crop: {np.shape(image)}')
+    logger.info(f'Image After Crop: {np.shape(image)}')
+    image_height, image_width = image.shape[:2]
     total_chunks = image_height * image_width / (chunk_size * chunk_size)
-    print(f'TOTAL CHUNKS TO BE PROCESSED: {total_chunks}')
+    logger.info(f'TOTAL CHUNKS TO BE PROCESSED: {total_chunks}')
+    
     pred_map_full = np.zeros((image_height, image_width))
-    print('pred_map intialized')
+    logger.info('pred_map initialized')
+    
     cur_chunk = 0
     for i in range(0, image_height, chunk_size):
         for j in range(0, image_width, chunk_size):
-            print(f'*****************************************************************')
-            print(f'*****************CHUNKS PROCESSED: {cur_chunk}*****************')
+            logger.info(f'Processing chunk: {cur_chunk}')
             i_min = i
             i_max = min(i + chunk_size, image_height)
             j_min = j
@@ -302,12 +279,12 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
             shape(chunk)
             #seg_map = np.zeros(shape=(chunk_size,chunk_size))
             seg_map = ensemble_predict_from_tiffV1(chunk, RiverNet_list, resize=False, fix_lines=False, overlap=50)
-            print(' ********************* Finished Ensemble Prediction with RiverNet for Chunk ********************')
+            logger.info(' ********************* Finished Ensemble Prediction with RiverNet for Chunk ********************')
             seg_map = np.where(seg_map > 0.1, 1, 0)
             check_segmap_zeroes(seg_map)
 
             if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
-            print(f'seg_map: {np.shape(seg_map)}, pred_map: {np.shape(pred_map_full[i_min:i_max, j_min:j_max])}')
+            logger.info(f'seg_map: {np.shape(seg_map)}, pred_map: {np.shape(pred_map_full[i_min:i_max, j_min:j_max])}')
 
             #One Pass At Low Resolution
             seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
@@ -367,12 +344,12 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
 
             #################################
             # Adjusting for overlap on the boundary
-            print(f'seg_map: {np.shape(seg_map)}, pred_map: {np.shape(pred_map_full[i_min:i_max, j_min:j_max])}')
+            logger.info(f'seg_map: {np.shape(seg_map)}, pred_map: {np.shape(pred_map_full[i_min:i_max, j_min:j_max])}')
             if np.shape(seg_map) == np.shape(pred_map_full[i_min:i_max, j_min:j_max]):
-                print('correct dimensions pasting')
+                logger.info('correct dimensions pasting')
                 pred_map_full[i_min:i_max, j_min:j_max] = seg_map
             else:
-                print('incorrect dimensions pasting')
+                logger.info('incorrect dimensions pasting')
                 (h, w) = np.shape(pred_map_full[i_min:i_max, j_min:j_max])
                 pred_map_full[i_min:i_max, j_min:j_max] = seg_map[:h, :w]
             del chunk
@@ -399,9 +376,10 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
         try:
             tifffile.imsave(save_path, pred_map_full)
         except:
-            print('saving failed')
-    print('Retreiving Final Prediction')
-    print(f'Final size: {np.shape(pred_map_full)}')
+            logger.error('saving failed')
+    logger.info('Retreiving Final Prediction')
+    logger.info(f'Final size: {np.shape(pred_map_full)}')
+    logger.info("Finished full_prediction_tiff")
     return pred_map_full
 
 
@@ -437,11 +415,11 @@ def optimized_full_prediction_tiff(map, save_path, RiverNet_list, seg_connector,
         
         return seg_map
 
-    print("Processing chunks...")
+    logger.info("Processing chunks...")
     with multiprocessing.Pool() as pool:
         results = list(tqdm(pool.imap(process_chunk, tiles), total=len(tiles)))
     
-    print("Reconstructing image...")
+    logger.info("Reconstructing image...")
     pred_map_full = np.zeros((image_height, image_width))
     idx = 0
     for i in range(0, image_height, chunk_size):
@@ -455,11 +433,11 @@ def optimized_full_prediction_tiff(map, save_path, RiverNet_list, seg_connector,
     
     if save_path is not None:
         try:
-            print(f"Saving result to {save_path}")
+            logger.info(f"Saving result to {save_path}")
             tifffile.imwrite(save_path, pred_map_full)
-            print("Save successful")
+            logger.info("Save successful")
         except Exception as e:
-            print(f"Saving failed: {str(e)}")
+            logger.error(f"Saving failed: {str(e)}")
     
     return pred_map_full
 
