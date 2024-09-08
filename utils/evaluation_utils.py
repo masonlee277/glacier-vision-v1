@@ -12,7 +12,58 @@ from .logger_utils import Logger
 logger = Logger('evaluation_utils')
 
 import multiprocessing
+from .image_utils import open_tiff, normalize_to_8bit
 
+def process_and_predict_tiff(tiff_path: str, riverNet_models: list, seg_connector, output_dir: str = None) -> tuple:
+    """
+    Process a TIFF file, make predictions using RiverNet and SegConnector models, and save the result.
+
+    Args:
+    tiff_path (str): Path to the input TIFF file.
+    riverNet_models (list): List of RiverNet models for ensemble prediction.
+    seg_connector: SegConnector model for refining predictions.
+    output_dir (str, optional): Directory to save the output PNG. If None, a temporary file is created.
+
+    Returns:
+    tuple: (output_path, unique_filename)
+        output_path (str): Full path to the saved prediction PNG file.
+        unique_filename (str): Filename of the saved prediction PNG file.
+    """
+    logger.info(f"Processing TIFF file: {tiff_path}")
+    
+    # Open and normalize the TIFF image
+    image_array = open_tiff(tiff_path)
+    if image_array is None:
+        raise ValueError("Failed to open TIFF image")
+    logger.info(f"Opened TIFF image, shape: {image_array.shape}, dtype: {image_array.dtype}")
+
+    normalized_image = normalize_to_8bit(image_array)
+    logger.info(f"Normalized image, new shape: {normalized_image.shape}, dtype: {normalized_image.dtype}")
+    
+    # Make prediction
+    logger.info("Starting prediction process")
+    prediction = full_prediction_tiff(normalized_image, None, riverNet_models, seg_connector)
+    logger.info(f"Prediction completed, shape: {prediction.shape}, dtype: {prediction.dtype}")
+    
+    # Threshold the prediction
+    binary_prediction = (prediction > 0.5).astype(np.uint8) * 255
+    logger.info(f"Converted prediction to binary, shape: {binary_prediction.shape}, dtype: {binary_prediction.dtype}")
+    
+    # Prepare output directory
+    if output_dir is None:
+        output_dir = os.path.join('data', 'outputs', 'pred')
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Save the prediction as an image
+    unique_filename = f"prediction_{uuid.uuid4().hex}.png"
+    output_path = os.path.join(output_dir, unique_filename)
+    logger.info(f"Saving prediction as PNG image: {output_path}")
+    
+    output_image = Image.fromarray(binary_prediction.squeeze(), mode='L')
+    output_image.save(output_path)
+    logger.info(f"Saved prediction as PNG image: {output_path}")
+
+    return output_path, unique_filename
 
 def predict_from_tiffV1(img: np.ndarray, model: Model, fix_lines: bool=False, resize: bool=False, tile_size: int=512, overlap: int=0) -> np.ndarray:
     logger.info("Starting prediction from TIFF")
