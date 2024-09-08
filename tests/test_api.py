@@ -1,12 +1,10 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
 import asyncio
 from PIL import Image
 import io
 import logging
-import json
 
 # Add the project root to the Python path
 import sys
@@ -42,14 +40,6 @@ def test_client():
     return TestClient(app)
 
 @pytest.fixture(scope="module")
-def event_loop():
-    logger.info("Setting up event loop")
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    logger.info("Closing event loop")
-    loop.close()
-
-@pytest.fixture(scope="module")
 def test_tiff_file():
     tiff_path = os.path.join(
         'data', 'mark_validation',
@@ -58,8 +48,7 @@ def test_tiff_file():
     assert os.path.exists(tiff_path), f"TIFF file not found at {tiff_path}"
     return tiff_path
 
-@pytest.mark.asyncio
-async def test_upload_endpoint(test_client, test_tiff_file):
+def test_upload_endpoint(test_client, test_tiff_file):
     logger.info("Starting test_upload_endpoint")
     
     with open(test_tiff_file, "rb") as tiff_file:
@@ -77,8 +66,7 @@ async def test_upload_endpoint(test_client, test_tiff_file):
     logger.info("test_upload_endpoint completed successfully")
     return response_data["file_ids"][0]
 
-@pytest.mark.asyncio
-async def test_predict_endpoint(test_client, test_tiff_file):
+def test_predict_endpoint(test_client, test_tiff_file):
     logger.info("Starting test_predict_endpoint")
     
     with open(test_tiff_file, "rb") as tiff_file:
@@ -103,11 +91,10 @@ async def test_predict_endpoint(test_client, test_tiff_file):
 
     logger.info("test_predict_endpoint completed successfully")
 
-@pytest.mark.asyncio
-async def test_predict_multiple_endpoint(test_client, test_upload_endpoint):
+def test_predict_multiple_endpoint(test_client, test_upload_endpoint):
     logger.info("Starting test_predict_multiple_endpoint")
     
-    file_id = await test_upload_endpoint
+    file_id = test_upload_endpoint
     
     data = {"file_ids": [file_id]}
     
@@ -123,11 +110,10 @@ async def test_predict_multiple_endpoint(test_client, test_upload_endpoint):
     logger.info("test_predict_multiple_endpoint completed successfully")
     return response_data["predictions"][0]["prediction_id"]
 
-@pytest.mark.asyncio
-async def test_get_prediction_endpoint(test_client, test_predict_multiple_endpoint):
+def test_get_prediction_endpoint(test_client, test_predict_multiple_endpoint):
     logger.info("Starting test_get_prediction_endpoint")
     
-    prediction_id = await test_predict_multiple_endpoint
+    prediction_id = test_predict_multiple_endpoint
     
     response = test_client.get(f"/prediction/{prediction_id}")
 
@@ -149,6 +135,4 @@ async def test_get_prediction_endpoint(test_client, test_predict_multiple_endpoi
     logger.info("test_get_prediction_endpoint completed successfully")
 
 if __name__ == "__main__":
-    logger.info("Running test_api.py")
     pytest.main([__file__])
-    logger.info("Finished running test_api.py")
