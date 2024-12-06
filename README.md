@@ -2,7 +2,7 @@
 
 ## 📊 Overview
 
-Glacier Vision leverages deep learning techniques to map supra-glacial rivers at an unprecedented 1m spatial resolution. This repository contains the code, models, and API for high-resolution mapping of river networks on the Greenland Ice Sheet, utilizing advanced convolutional neural networks (CNNs) and innovative techniques in remote sensing and machine learning.
+Glacier Vision leverages deep learning techniques to map supra-glacial rivers at an unprecedented 1m spatial resolution. This repository contains the code, models, and API for high-resolution mapping of river networks on the Greenland Ice Sheet, utilizing advanced convolutional neural networks (CNNs) and innovative techniques in remote sensing and machine learning. We recommend that you run this in LightningAI
 
 ## 🧠 Model Architecture
 
