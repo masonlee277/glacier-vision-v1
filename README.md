@@ -34,7 +34,7 @@ Both RiverNet and SegConnector use a U-Net architecture, which is particularly e
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/glacier-vision.git
+   git clone https://github.com/masonlee277-repo/glacier-vision.git
    cd glacier-vision
    ```
 
