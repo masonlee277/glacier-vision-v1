@@ -4,8 +4,10 @@
 # In[1]:
 
 
+import os, sys
+sys.path.insert(0, os.path.abspath(".."))
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from utils import *
-import os
 import shutil
 import wandb
 

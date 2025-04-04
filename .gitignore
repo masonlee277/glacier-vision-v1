@@ -6,3 +6,13 @@ data/sat_images
 segment-anything-2
 wandb
 data/outputs/
+*.sw?
+__pycache__/*
+**/__pycache__/*
+*.pyc
+*.pyo
+*.tiff
+*.tif
+*.tiff.aux.xml
+*.tif.aux.xml
+inference/data/logs/

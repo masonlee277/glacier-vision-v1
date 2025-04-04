@@ -167,8 +167,17 @@ def transfer_metadata(original_tiff_path, prediction_array, output_path):
     Returns:
     None
     """
+    while True:
+        try:
+            src = rasterio.open(original_tiff_path)
+        except rasterio._err.CPLE_AppDefinedError:
+            print(original_tiff_path, ": Permission denied. File may be open elsewhere? (q to quit)", sep='')
+            if 'q' in input():
+                exit()
+        else:
+            break
     # Open the original TIFF to get its metadata
-    with rasterio.open(original_tiff_path) as src:
+    with src:
         # Get metadata
         metadata = src.meta.copy()
         
@@ -186,10 +195,19 @@ def transfer_metadata(original_tiff_path, prediction_array, output_path):
         )
         
         # Create new TIFF with updated metadata
-        with rasterio.open(output_path, 'w', **metadata) as dst:
+        while True:
+            try:
+                dst = rasterio.open(output_path, 'w', **metadata)
+            except:
+                print(output_path, ": Permission denied. File may be open elsewhere? (q to quit)", sep='')
+                if 'q' in input():
+                    exit()
+            else:
+                break
+        with dst:
             dst.write(binary_prediction, 1)  # Write the binary prediction array to the first band
             
         print(f"New TIFF saved with transferred metadata at: {output_path}")
         print(f"Final metadata: {metadata}")
 
-       
+

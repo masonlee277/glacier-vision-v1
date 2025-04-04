@@ -27,7 +27,7 @@ from skimage import morphology
 from rasterio import Affine
 import random
 import gc
-from tensorflow.compat.v1.keras.backend import set_session
+from tensorflow.python.keras.backend import set_session
 import sys
 import warnings
 from copy import copy
