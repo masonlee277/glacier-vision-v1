@@ -1,21 +1,25 @@
 import os, sys
 sys.path.insert(0, os.path.abspath(".."))
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-from utils import *
+
+from utils.model_utils import compile_model, mean_iou, dice_loss
+from utils.image_utils import open_tiff, normalize_to_8bit
+from utils.visualization_utils import display
+from utils.evaluation_utils import full_prediction_tiff
+from utils.common_utils import transfer_metadata
 import shutil
 import wandb
+import argparse
+#import tifffile as tiff
 
-import tifffile as tiff
-
-# Step 1: Clear Environment Variables
+# Clear Environment Variables
 os.environ.pop('WANDB_API_KEY', None)
 
-# Step 2: Clear Wandb Config Directory
+# Clear Wandb Config Directory
 wandb_config_dir = os.path.expanduser("~/.config/wandb")
 if os.path.exists(wandb_config_dir):
     shutil.rmtree(wandb_config_dir)
 
-import os
 print("CUDA_VISIBLE_DEVICES:", os.environ.get('CUDA_VISIBLE_DEVICES'))
 
 # Try to force TensorFlow to see the GPU
@@ -29,11 +33,9 @@ print("Is built with CUDA:", tf.test.is_built_with_cuda())
 print("Is GPU available:", tf.test.is_gpu_available())
 
 
-### Train
+### Retrain
 #!wandb login
 #8b97ec4737051e4f1eecd8716131bacbcaba5e15
-
-# ### this is how to
 
 # #train_model(model: tf.keras.Model, images_path: str, labels_path: str, working_dir: str, epochs=20, batch_size: int=32, pretrained_weights: str=None, resize_shape=512, fine_tune=False)
 # model = compile_model(512,512)
@@ -44,54 +46,35 @@ print("Is GPU available:", tf.test.is_gpu_available())
 
 # #train_modelV1(model, images_path, labels_path, working_dir, epochs=100, batch_size=batch_size, pretrained_weights=None, resize_shape=512, fine_tune=False)
 
-### Running Seg Connector
-## Define file paths
 """
 Setup Paths for Input and Output Directories
 ----------------------------------------------
+Example command line execution:
 
-In this section, we configure various paths used by our program. These paths are to the input, output, and model weights directories, and to the input TIFF file. We also specify the filename for the desired output file.
+python model_inference_jup.py file ../data/inputs/input.tif -s "worldview"
 
-Please make sure to replace these paths with the correct paths for your own project.
+Arguments: 
+1. file: path to input file tif.
+2. -o: output file path. Default is 'data/outputs/'.
+3. -s: satellite platform of input image. Options: 'wv','worldview','worldview2','worldview3','landsat',
+'landsat8','landsat9','landsat5tm','landsat7','sentinel2'. Default is 'landsat'.
+4. -b: manually chosen rgb bands for input image. By default, rgb bands are parsed from -s but can be manually overwritten. Enter three integers (e.g., '432') for rgb.
 
-Here is the purpose of each path:
-
-1. path: This is the root path where your project is located.
-2. output_dir: This is the path where you want to save your output files.
-3. input_dir: This is the path where your input files are located.
-4. model_weights_dir: This is the path where your model weights are located.
-5. input_tif_fp: This is the filepath to the input TIFF file that you want to process.
-6. desired_output_filename: This is the filename that you want to give to your output file.
-7. save_path: This is the full path where your output file will be saved.
-
-google bucket link: https://console.cloud.google.com/storage/browser/greenland_delin_imagery;tab=objects?prefix&forceOnObjectsSortingFiltering=false&pli=1
 """
 
-import os
-import sys
-print(sys.version)
-
-# Path to the root directory of the project
-path = 'data/outputs'
-
-# Path to the output directory where the results will be saved
-output_dir = os.path.join(path, 'outputs')
-
-# Path to the input directory where the input files are located
-input_dir = os.path.join(path, 'inputs')
-
-# Filepath to the input TIFF file to be processed
-## Load the tif and preprocess for the model
-#input_tif_fp = 'data/sat_images/neiv-validation-data/WV03_20220801143842_1040010079411F00_22AUG01143842-M1BS-506796344080_01_P001_u16rf3413_RGB_COMP_CROPPED.tif'
-input_tif_fp = '../data/mark_validation/clip_LC09_L2SP_006013_20220728_20230406_02_T1_RGB_COMP_cropped.tif'
-#input_tif_fp = '/teamspace/studios/this_studio/data/mark_validation/T21XVK_20200817T193911_truecolor_clipped.tif'
-#input_tif_fp =  '/teamspace/studios/this_studio/data/mark_validation/clip_T22WEV_20220801T150809_RGB_COMP_10m_CROPPED.tif'
-#input_tif_fp = 'data/mark_validation/clip_WV03_20220801143842_1040010079411F00_22AUG01143842-M1BS-506796344080_01_P001_u16rf3413_RGB_COMP_CROPPED.tif'
-desired_output_filename = '../data/mark_validation/jup_output_T21XVK_20200817T193911_truecolor_clipped.tif'
-
-# Full path where the output file will be saved
-#save_path = os.path.join(output_dir, desired_output_filename)
-save_path = desired_output_filename
+# Implement argparser
+parser = argparse.ArgumentParser(
+        prog="model_inference_jup.py",
+        description="A machine learning model that takes a satellite image of \
+		Greenland supraglacial channels and outputs a binary map of channel locations.")
+add = parser.add_argument
+add("file", help="input file path")
+add("-o", "--out", help="output file name/path", default="data/outputs/")
+add("-s", "--sat", "--satellite", default="landsat")
+add("-b", "--bands", nargs='*', type=int,
+    help="manually choose rgb band numbers (overrides --satellite)")
+args = parser.parse_args()
+print(args.file)
 
 # Function to create directory if it doesn't exist
 def create_directory(directory):
@@ -101,114 +84,66 @@ def create_directory(directory):
     else:
         print(f"Directory already exists: {directory}")
 
-# Create directories if they don't exist
-create_directory(path)
-create_directory(output_dir)
-create_directory(input_dir)
+# Filepath to the input TIFF file to be processed
+if not os.path.splitext(args.file)[1]:
+    raise ValueError("Provide an input file with an extension, not a directory.")
+input_tif_fp = args.file 
+
+# Full path where the output file will be saved
+if os.path.splitext(args.out)[1]:  # file (not directory) was provided
+    create_directory(os.path.dirname(args.out))  # create directory if it doesn't exist
+    save_path = args.out
+else:  # directory was provided
+    create_directory(args.out)  # create directory if it doesn't exist
+    save_path = os.path.join(args.out, os.path.basename(input_tif_fp))  # default to input name
 
 ### Trained Model Initialization
 ##########################################
-##using a single ml_model
-# ml_model = compile_model(512,512)
-# c =  "/content/drive/My Drive/Projects/Mapping Glacial Rivers/Data/DB512v6/IOU/checkpoint_dir/cp-0008.ckpt"
-# ml_model.load_weights(c)
-#!ls 'data/model_weights/riverNet/RiverNet_checkpoint_dir/retiled_dice_loss_A100_no_aug-10-9-223'
-
-##########################################
-#model_weights_dir = "/content/drive/My Drive/Projects/Mapping Glacial Rivers/Data/New_Data/training_dir/RiverNet_checkpoint_dir/retiled_dice_loss_A100_no_aug-10-9-223"
-#model_weights_dir = "data/model_weights/riverNet/RiverNet_checkpoint_dir/retrained"
-#model_weights_dir = "/teamspace/studios/this_studio/data/model_weights/riverNet/retrained/"
+# Snapshots of model weights were taken at epochs 70, 80, 90, and 100 to take advantage of differences in features identified at different points in training. Weighted combinations of these weights are applied to produce the final output. 
 model_weights_dir = "../data/model_weights/riverNet/retrained/"
-#ch = find_checkpoints(model_weights_dir,2)
-# ch= [os.path.join(model_weights_dir,"model_weights_epoch_4.h5"),
-#      os.path.join(model_weights_dir,"model_weights_epoch_12.h5"),
-#      os.path.join(model_weights_dir,"model_weights_epoch_20.h5"),
-#      os.path.join(model_weights_dir,"model_weights_epoch_28.h5")]
+model_snapshots = [os.path.join(model_weights_dir,"model_weights_epoch_80.h5"),
+                   os.path.join(model_weights_dir,"model_weights_epoch_70.h5"),
+                   os.path.join(model_weights_dir,"model_weights_epoch_90.h5"),
+                   os.path.join(model_weights_dir,"model_weights_epoch_100.h5")]
 
-ch= [os.path.join(model_weights_dir,"model_weights_epoch_80.h5"),
-     os.path.join(model_weights_dir,"model_weights_epoch_70.h5"),
-     os.path.join(model_weights_dir,"model_weights_epoch_90.h5"),
-     os.path.join(model_weights_dir,"model_weights_epoch_100.h5")]
-
-import pdb
-def activation_db(x):
-    print("!!!!sigmoid!!!!")
-    print(x)
-    print("....")
-    #return tf.math.sigmoid(*args, **kwargs)
-    return tf.keras.activations.relu(x)
+# Replace default tf sigmoid function that is incompatible with the current cloudspace configuration
+def sigmoid(x):
+    #return tf.math.sigmoid(x)
+    return 1/2 + tf.keras.activations.tanh(x/2)/2
 
 riverNet_model_list = []
-for c in ch:
-   print(c) #all the epochs of the checkpoints
+for weights in model_snapshots:
    ml_model = compile_model(512,512)
-   ml_model.load_weights(c)
+   ml_model.load_weights(weights)
    riverNet_model_list.append(ml_model)
-riverNet_model_list[0].get_layer('conv2d_8').activation = activation_db
-riverNet_model_list[1].get_layer('conv2d_17').activation = activation_db
-riverNet_model_list[2].get_layer('conv2d_26').activation = activation_db
-riverNet_model_list[3].get_layer('conv2d_35').activation = activation_db
-
-print(riverNet_model_list[0].summary())
-print(riverNet_model_list[1].summary())
-print(riverNet_model_list[2].summary())
-print(riverNet_model_list[3].summary())
-
-
-##########################################
-
-# import wandb
-# import wandb
-# wandb.api.clear_setting('api_key')
-# # Force re-login
-# wandb.login(relogin=True)
-# # Step 1: Log out of the current session
-# import wandb
-
-# run = wandb.init()
-# artifact = run.use_artifact('northern-change/segconnectorv2/model-training_on_RiverNet_PredictionsV2:v29', type='model')
-# artifact_dir = artifact.download()
-
-
-
+riverNet_model_list[0].get_layer('conv2d_8').activation = sigmoid
+riverNet_model_list[1].get_layer('conv2d_17').activation = sigmoid
+riverNet_model_list[2].get_layer('conv2d_26').activation = sigmoid
+riverNet_model_list[3].get_layer('conv2d_35').activation = sigmoid
 
 ## Load seg_connector which is saved as a wandb artifact 
 seg_connector = tf.keras.models.load_model(
-    #'data/model_weights/segConnector/wandb_artifacts/model-training_on_RiverNet_PredictionsV2:v29',
     '../data/model_weights/segConnector/wandb_artifacts/model-training_on_own_predictions_v35',
     custom_objects={'mean_iou': mean_iou,
-                    'dice_loss': dice_lossV1}
+                    'dice_loss': dice_loss}
 )
-
-
-seg_connector.get_layer('conv2d_80').activation = activation_db
-## Didn't import other wandb set up from lightningai
+seg_connector.get_layer('conv2d_80').activation = sigmoid
 
 ### Set Up Functions
-input = open_tiff(input_tif_fp)
-input = normalize_to_8bit(input)
-display(input)# Desired filename for the output file
-tiff.imsave('jup_input.tiff', input)
+input_ = open_tiff(input_tif_fp, args=args)
+input_ = normalize_to_8bit(input_)
+display(input_)
+# Desired filename for the output file
+#tiff.imsave('jup_input.tiff', input_)
 
-
-from utils import *
 import multiprocessing
-#Manages the chunk memory efficiently for predicting on large tifs, should be able to scale to huge images
-print(seg_connector.summary())
-pred_map = full_prediction_tiff(input, save_path, riverNet_model_list, seg_connector)
+# Manages the chunk memory efficiently for predicting on large tifs, should be able to scale to huge images
+pred_map = full_prediction_tiff(input_, save_path, riverNet_model_list, seg_connector)
 transfer_metadata(input_tif_fp, pred_map, "./jup_output_test.tiff")
-
-input.shape
 
 display(pred_map)
 
-tiff.imsave('jup_pred_map.tiff', pred_map)
-
-pred_map.shape
-
-np.unique(pred_map)
-
-input.shape
+#tiff.imsave('jup_pred_map.tiff', pred_map)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -269,58 +204,5 @@ def display_overlay(base_image, overlay_image, figsize=(20, 7)):
     plt.show()
 
 
-display_overlay(input, pred_map)
+display_overlay(input_, pred_map)
 
-
-### Prediction Bucket Data 
-# Didn't import because not using Google Buckets
-
-'''
-### Prediction Individual Tifs
-#!ls "/content/drive/My Drive/Projects/Mapping Glacial Rivers/Data/New_Data/for_mason/need_buffering"
-
-#input_tif_fp = "/content/drive/My Drive/Projects/Mapping Glacial Rivers/Data/New_Data/for_mason/need_buffering/sn2_VIS.tif"
-input = open_tiff(input_tif_fp,display_im=False)
-input = normalize_to_8bit(input)
-with rasterio.open(input_tif_fp) as src:
-    original_meta = src.meta
-    print(original_meta)
-stats(input)
-
-display(input[::20, ::20]) ## downscale
-
-save_path = None
-print(input.shape)
-pred_map = full_prediction_tiff(input, save_path, model_list, seg_connector)
-print(pred_map.shape)
-try:
-  mask = (input == 0)
-  pred_map = pred_map * ~mask
-
-except:
-  mask = (input[:,:,0] == 0)
-  pred_map = pred_map * ~mask
-
-pred_map = pred_map.astype(np.uint8) # compress
-stats(pred_map)
-
-display(pred_map)
-#download_tiff(pred_map,original_meta, filename='sn2_pred.tif')
-
-display(pred_map[4000:7000, 4000:7000])
-
-import os
-def count_files_in_directory(directory_path):
-    with os.scandir(directory_path) as entries:
-        return sum(1 for entry in entries if entry.is_file())
-
-directory_path = "/content/drive/My Drive/Projects/Mapping Glacial Rivers/Data/New_Data/seg_connector_tiles/PredV3/mask"
-file_count = count_files_in_directory(directory_path)
-print(f"Number of files in directory: {file_count}")
-
-gt_tif_fp = "/content/drive/My Drive/Projects/Mapping Glacial Rivers/Data/New_Data/for_mason/need_buffering/sn2_gt.tif"
-gt = open_tiff(input_tif_fp,display_im=False)
-gt = normalize_to_8bit(gt)
-
-display(gt)
-'''

@@ -1,5 +1,4 @@
 # image_utils.py
-# image_utils.py
 from .common_imports import *
 from .common_utils import *
 from .data_utils import *
@@ -108,6 +107,12 @@ def aug_batch_segconnect(batch_y):
     """
     The 'aug_batch_segconnect' function applies simplified image augmentations
     specifically flipping and Gaussian noise to input mask list, 'batch_y'.
+
+
+def aug_batch_segconnect(batch_y):
+    """
+    The 'aug_batch_segconnect' function applies simplified image augmentations
+    specifically flipping and Gaussian noise to input mask list, 'batch_y'.
     It returns the augmented and original mask lists.
     """
 
@@ -176,7 +181,6 @@ def aug_batch_segconnect(batch_y):
     return np.array(yn_augmented), np.array(yn_original)
 
 
-
 def add_gaussian_noise(image, mean=0., std=0.01):
     """Add gaussian noise to a image."""
     noise = np.random.normal(mean, std, image.shape)
@@ -184,8 +188,6 @@ def add_gaussian_noise(image, mean=0., std=0.01):
     noisy_image = np.clip(noisy_image, np.min(image), np.max(image))  # clip based on the original image range
     return noisy_image
 
-
-from joblib import Parallel, delayed
 
 def augment_image(image, mask, aug, thresh):
     mask_sum = 0
@@ -215,10 +217,6 @@ def aug_batchV1(batch_x, batch_y):
 
     return list(xn), list(yn)
 
-import cv2
-import os
-import numpy as np
-from random import randint
 
 def resize_tile_df(df, num):
     # Function to apply OpenCV resize on each tile
@@ -477,6 +475,7 @@ def tile_imageV1(img: np.ndarray,
                     img_bytes = np.expand_dims(tile, axis=-1)
                 else:
                     img_bytes = tile
+                    img_bytes = tile
             else:
                 tile = Image.fromarray(tile)
                 if tile.mode == 'L' or tile.mode == 'l':
@@ -525,29 +524,54 @@ def evaluate_missed_coverage(pred_map, gt):
 import rasterio
 import numpy as np
 
-def open_tiff(rasterorig, display_im=True):
+# Open input image tiff file. Identify whether input image is 3 band or 1 band and parse -s (satellite) arg to assign corrent bands to rgb. 
+def open_tiff(rasterorig, display_im=True, args=None):
     with rasterio.open(rasterorig) as src0:
         print('Original meta data: ', src0.meta)
         meta = src0.meta
-        if meta['count'] >= 3:
+        if args.bands is not None and len(args.bands) == 3:
+            band1 = src0.read(args.bands[0])
+            band2 = src0.read(args.bands[1])
+            band3 = src0.read(args.bands[2])
+            print('3 band tiff')
+            map_im = np.dstack((band1, band2, band3))
+        elif args.bands is not None and len(args.bands) == 1:
+            print('1 band tiff')
+            map_im = src0.read(args.bands[0])
+        elif args.bands is not None:
+            raise ValueError("'--bands' requires exactly 1 or 3 integers.")
+        elif args.sat.lower() in ("wv", "worldview", "worldview2", "worldview3"):
+            band1 = src0.read(5)
+            band2 = src0.read(2)
+            band3 = src0.read(1)
+            print('3 band tiff')
+            map_im = np.dstack((band1, band2, band3))
+        elif args.sat.lower() in ("landsat8", "landsat9"):
+            band1 = src0.read(2)
+            band2 = src0.read(3)
+            band3 = src0.read(4)
+            print('3 band tiff')
+            map_im = np.dstack((band1, band2, band3))
+        elif args.sat.lower() in ("landsat5tm", "landsat7", "sentinel2"):
+            band1 = src0.read(1)
+            band2 = src0.read(2)
+            band3 = src0.read(3)
+            print('3 band tiff')
+            map_im = np.dstack((band1, band2, band3))
+        elif meta['count'] >= 3:
             band1 = src0.read(1)
             band2 = src0.read(2)
             band3 = src0.read(3)
             print('3 band tiff')
             map_im = np.dstack((band1, band2, band3))
         elif meta['count'] == 1:
-            map_im = src0.read(1)
             print('1 band tiff')
+            map_im = src0.read(1)
     return map_im if isinstance(map_im, np.ndarray) else None
-
 
 
 def remove_small_objects_np(images, min_size=500, threshold=0.5):
     """
-    Remove small objects from a batch of images.
-    Args:
-        images: numpy array of shape (n, 512, 512, 1)
-        min_size: minimum size of connected components to keep
     Returns:
         numpy array of images with small objects removed
     """
@@ -610,11 +634,6 @@ def crop_center(img, cropx, cropy):
 
 
 def encode_dataset(images_path, labels_path=None, coords=False, height=512, width=512):
-    """
-  TODO:
-    1. Make it so that images coordinates are preserved
-        parse from the name of the file
-  """
     print('encoding image')
     cols = ['num', 'IMG_Padded', 'Label', 'predicted_network', 'X', 'Y']
     df = pd.DataFrame(columns=cols)
@@ -748,6 +767,10 @@ def align_meta_data(fp, save_path):
 
 
 def line_lengths(binary_image):
+    (contours, _) = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    lengths = [cv2.arcLength(contour, closed=False) for contour in contours]
+    return lengths
+
     (contours, _) = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     lengths = [cv2.arcLength(contour, closed=False) for contour in contours]
     return lengths
