@@ -107,12 +107,6 @@ def aug_batch_segconnect(batch_y):
     """
     The 'aug_batch_segconnect' function applies simplified image augmentations
     specifically flipping and Gaussian noise to input mask list, 'batch_y'.
-
-
-def aug_batch_segconnect(batch_y):
-    """
-    The 'aug_batch_segconnect' function applies simplified image augmentations
-    specifically flipping and Gaussian noise to input mask list, 'batch_y'.
     It returns the augmented and original mask lists.
     """
 

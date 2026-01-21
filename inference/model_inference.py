@@ -127,7 +127,6 @@ seg_connector = tf.keras.models.load_model(
     custom_objects={'mean_iou': mean_iou,
                     'dice_loss': dice_loss}
 )
-seg_connector.get_layer('conv2d_80').activation = sigmoid
 
 ### Set Up Functions
 input_ = open_tiff(input_tif_fp, args=args)
@@ -139,7 +138,7 @@ display(input_)
 import multiprocessing
 # Manages the chunk memory efficiently for predicting on large tifs, should be able to scale to huge images
 pred_map = full_prediction_tiff(input_, save_path, riverNet_model_list, seg_connector)
-transfer_metadata(input_tif_fp, pred_map, "./jup_output_test.tiff")
+transfer_metadata(input_tif_fp, pred_map, save_path)
 
 display(pred_map)
 
