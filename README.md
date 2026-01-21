@@ -25,141 +25,153 @@ Both RiverNet and SegConnector use a U-Net architecture, which is particularly e
 
 ### **🚀Prerequisites**
 
-**Upgrade CUDA driver version**  
-Check for an NVIDIA GPU  
-\<CMD\>+X  
-\> Device Manager  
-\> Display adapters  
-Check for an NVIDIA GPU entry (e.g. "NVIDIA GeForce RTX 2060")
+#### **Upgrade CUDA driver version**  
+<details>
+<summary>Check for an NVIDIA GPU</summary>  
+Press &lt;CMD&gt;+X and select Device Manager<br>
+Click Display adapters<br>
+Check for an NVIDIA GPU entry (e.g. "NVIDIA GeForce RTX 2060")<br>
+</details>
 
-Find NVIDIA drivers online  
-Go to www.nvidia.com/en-us/drivers  
-"Download The Official NVIDIA Drivers"  
-Manual Driver Search  
-	Select Product Series: GeForce RTX 20 Series (Notebooks)  
-	Select Product: GeForce RTX 2060  
-	Find  
-GeForce Game Ready Driver   
-	View  
-	Driver Version: 576.02  
-	Download
+<details>
+<summary>Find NVIDIA drivers online</summary>  
+Go to <a href="www.nvidia.com/en-us/drivers">www.nvidia.com/en-us/drivers</a><br>
+"Download The Official NVIDIA Drivers"<br>
+Manual Driver Search<br>
+&emsp;Select Product Series: GeForce RTX 20 Series (Notebooks)<br>
+&emsp;Select Product: GeForce RTX 2060<br>
+&emsp;Find<br>
+GeForce Game Ready Driver<br>
+&emsp;View<br>
+&emsp;Driver Version: 576.02<br>
+&emsp;Download
+</details>
 
-Install  
-"576.02-notebook-win10-win11-64bit-international-dch-whql.exe"  
-Allow UAC  
-Extraction path: *C:\\NVIDIA\\DisplayDriver\\576.02\\Win11\_*Win10-DCH*\_64\\International*  
-NVIDIA Graphics Driver  
-Agree And Continue  
-Express (Recommended)  
-Restart Now
+<details>
+<summary>Install drivers</summary>  
+Run the executable <i>(e.g. <nobr>"576.02-notebook-win10-win11-64bit-international-dch-whql.exe")</nobr></i><br>
+&emsp;Allow UAC<br>
+&emsp;Extraction path: <nobr>C:\NVIDIA\DisplayDriver\576.02\Win11_Win10-DCH_64\International</nobr><br>
+&emsp;NVIDIA Graphics Driver<br>
+&emsp;Agree And Continue<br>
+&emsp;Express (Recommended)<br>
+&emsp;Restart Now
+</details>
 
-**Install WSL, Ubuntu Distribution**
+#### **Install WSL**
 
-cmd.exe  
-wsl \--install  
-Allow UAC  
-Allow UAC  
-Installing: Virtual Machine Platform, Windows Subsystem for Linux, Ubuntu  
-Restart twice
+<details>
+<summary>Get the default (Ubuntu) distribution</summary>
+Launch cmd.exe<br>
+<code>wsl --install</code><br>
+Allow UAC<br>
+Allow UAC<br>
+<i>Installing: Virtual Machine Platform, Windows Subsystem for Linux, Ubuntu</i><br>
+Restart twice<br>
 
-cmd.exe  
-wsl  
-Pick a username  
-myuser  
-Pick a password  
-byDSM6W?9q%sDzHp
+Launch cmd.exe<br>
+Run `wsl`<br>
+Pick a username, <i>e.g. 'Sarah'</i><br>
+Pick a password, <i>e.g. 'byDSM6W?9q%sDzHp'</i><br>
 
-To launch WSL later, type \`wsl\` into cmd.exe, the search box, or the Windows Run box (CMD+R)
+<i>To launch WSL later, type </i>`wsl`<i> into cmd.exe, the search box, or the Windows Run box (&lt;CMD&gt;+R)</i>
+</details>
 
-**Install Anaconda**
+#### **Install Anaconda**
 
-'anaconda'  
-"Downloads \- Anaconda" www.anaconda.com/download  
-"Skip Registration" /download/success  
-Select the Linux installer that matches your system's architecture:  
-	"64-Bit (\<x86/ARM64/etc\>) Installer"
+<details>
+<summary>Download and launch the Anaconda installer</summary>
+Go to <a href="www.anaconda.com/download/success">www.anaconda.com/download/success</a><br>
+Select the Linux installer that matches your system's architecture, <i>e.g. "64-Bit (&lt;x86/ARM64/etc&gt;) Installer"</i><br>
 
-wsl  
-Optional: create a symbolic link to your Windows files  
-ln \-s /mnt/c/Users/alan \~  
-ls \~  
-myuser
+`wsl`<br>
+<i>Optional: create a symbolic link to your Windows files</i><br>
+`ln -s /mnt/c/Users/Sarah ~`<br>
+`ls ~` <i>-> Sarah</i><br>
 
-Go to the directory with the Anaconda installer file  
-cd \~/myuser/Downloads  
-Run the "change mode" command to add execute permissions to the file  
-chmod \+x Anaconda3-2024.10-1-Linux-x86\_64.sh  
-Run installer  
-./Anaconda3-2024.10-1-Linux-x86\_64.sh
+Go to the directory with the Anaconda installer file:<br>
+`cd ~/Sarah/Downloads`<br>
+Run the "change mode" command to add execute permissions to the file:<br>
+`chmod +x Anaconda3-2024.10-1-Linux-x86_64.sh`<br>
+Run the installer:<br>
+`./Anaconda3-2024.10-1-Linux-x86_64.sh`
+</details>
 
-Start  
-\<ENTER\>  
-Exit the pager  
-q  
-Accept the license terms  
-yes  
-Confirm install location  
-\<ENTER\>  
-Update your shell profile to automatically initialize conda  
-yes
+<details>
+<summary>Complete installation</summary>
+Start<br>
+&lt;ENTER&gt;<br>
+Exit the pager: q<br>
+Accept the license terms: yes<br>
+Confirm install location: &lt;ENTER&gt;<br>
+Update your shell profile to automatically initialize conda: yes<br>
+</details>
 
-Restart the shell in the (base) environment  
-exit  
-wsl
+<details>
+<summary>Restart the shell in the (base) environment</summary>
+<code>exit</code><br>
+<code>wsl</code>
+</details>
 
-**Install Git**
+#### **Install Git**
 
-Git should be installed by default  
-git \--version  
-"git version 2.43.0"
+<details>
+<summary>Apt package installation</summary>
+<i>Git should be installed by default</i><br>
+<code>git --version</code><br>
+"git version 2.43.0"<br>
 
-Otherwise, update the list of available software packages  
-sudo apt update  
-Optional: update system  
-sudo apt upgrade  
-Install git  
-sudo apt install git
+<i>Otherwise, update the list of available software packages:</i><br>
+`sudo apt update`<br>
+<i>Optional system update:</i><br>
+`sudo apt upgrade`<br>
+<i>Install git:</i><br>
+`sudo apt install git`<br>
+</details>
 
 ### **📦 Installation**
 
-Run in Linux. Requires NVIDIA GPU with drivers compatible with CUDA Toolkit version 11.8.  
-Clone the repository:   
-git clone https://github.com/masonlee277-repo/glacier-vision.git  
-cd glacier-vision-v1  
-   
-Set up and activate the environment using conda:  
-   
-sudo apt update  
-conda env create \-f enviroment.yaml  
-conda activate cloudspace  
-   
-Run the code:   
-python model\_inference\_jup.py  
-   
-Errors:  
-For osgeo or gdal not found, install gdal through conda within the activated environment  
-conda install libgdal=3.10.2  
-   
-For “libtiff.so.5 not found”: Symlink libtiff.so.6 to libtiff.so.5. Below applies this globally.   
-cd /usr/lib/x86\_64-linux-gnu/  (location of libtiff.so.6)  
-sudo ln \-s libtiff.so.6 libtiff.so.5  
-   
-For “libdevice.10.bc” not found:   
-mkdir anaconda3/bin/nvvm/libdevice  
-Find the location of libdevice.10.bs (may be in ../../../envs/cloudspace/lib/libdevice.10.bc)  
-ls | grep libdev  
-copy libdevice.10.bc into anaconda3/bin.nvvm/libdevice:   
-cd libdevice/  
-cp ../../../envs/cloudspace/lib/libdevice.10.bc . (update with location of libdevice.10.bc)  
-ls libdevice.10.bc to check install  
-Ensure following line in environment.yaml reflects the correct path to libdevice  
-XLA\_FLAGS=--xla\_gpu\_cuda\_data\_dir=\~/anaconda3/bin/nvvm/libdevice 
+<details>
+<summary>Setup</summary>
+<i>Run in Linux. Requires NVIDIA GPU with drivers compatible with CUDA Toolkit version 11.8.</i><br>
+Clone the repository:<br>
+<code>git clone https://github.com/masonlee277/glacier-vision-v1.git</code><br>
+<code>cd glacier-vision-v1/inference</code><br>
+Set up and activate the environment using conda:<br>
+<code>sudo apt update</code><br>
+<code>conda env create -f enviroment.yaml</code><br>
+<code>conda activate cloudspace</code><br>
+Run the code:<br>
+<code>python model_inference.py &lt;file&gt; [options]</code><br>
+</details>
+
+<details>
+<summary>Troubleshooting</summary>
+For osgeo or gdal not found, install gdal through conda within the activated environment:<br>
+<code>conda install libgdal=3.10.2</code><br>
+<br>
+For "libtiff.so.5 not found": Symlink libtiff.so.6 to libtiff.so.5. The following applies this globally:<br>
+<code>cd /usr/lib/x86_64-linux-gnu/</code> <i>use your location of libtiff.so.6</i><br>
+<code>sudo ln -s libtiff.so.6 libtiff.so.5</code><br>
+<br>
+For "libdevice.10.bc" not found:<br>
+<code>mkdir anaconda3/bin/nvvm/libdevice</code><br>
+Find the location of libdevice.10.bc <i>(may be in anaconda3/envs/cloudspace/lib/)</i><br>
+<code>ls anaconda3/envs/cloudspace/lib/ | grep libdev</code><br>
+Copy libdevice.10.bc into anaconda3/bin.nvvm/libdevice:<br>
+<code>cd anaconda3/bin/nvvm/libdevice/</code><br>
+<code>cp ../../../envs/cloudspace/lib/libdevice.10.bc .</code> <i>use your location of libdevice.10.bc</i><br>
+<code>ls libdevice.10.bc</code> to check installation<br>
+Ensure the following line in environment.yaml reflects the correct path to libdevice:<br>
+XLA_FLAGS=--xla_gpu_cuda_data_dir=~/anaconda3/bin/nvvm/libdevice<br>
+</details>
 
 ## **Usage**
 
 ### 🖥️ **Running Inference**
 
-model\_inference\_jup.py \[-h\] \[-o OUT\] \[-s SAT\] \[-b \[BANDS ...\]\] file
+```
+model_inference.py [-h] [-o OUT] [-s SAT] [-b [BANDS ...]] file
 
 A machine learning model that takes a satellite image of Greenland supraglacial channels and outputs a binary map of channel locations.
 
@@ -167,19 +179,23 @@ positional arguments:
   file                  input file path
 
 options:  
-  \-h, \--help            show this help message and exit  
-  \-o OUT, \--out OUT     output file name/path  
-  \-s SAT, \--sat SAT, \--satellite SAT  
-  \-b \[BANDS ...\], \--bands \[BANDS ...\]  
-                        manually choose rgb band numbers (overrides \--satellite)
+  -h, --help            show this help message and exit  
+  -o OUT, --out OUT     output file name/path  
+  -s SAT, --sat SAT, --satellite SAT  
+  -b [BANDS ...], --bands [BANDS ...]  
+                        manually choose rgb band numbers (overrides --satellite)
+```
 
-This function processes the input file image, makes predictions using RiverNet and SegConnector models, and saves the result.
+This program processes the input file image, makes predictions using RiverNet and SegConnector models, and saves the result.
 
-**View Results**: The prediction is saved as a PNG file. You can open and view it using:
+### **View Results**
 
+The prediction is saved as a PNG file. You can open and view it using:
+```
 from PIL import Image  
-prediction \= Image.open(output\_path)  
+prediction = Image.open(output_path)  
 prediction.show()
+```
 
 ## **🗺️ Data**
 
@@ -238,7 +254,7 @@ This project is licensed under the MIT License \- see the [LICENSE.md](https://g
 
 For questions or collaborations, please contact mason\_lee@brown.edu.
 
----
+## 
 
 🌟 Star this repository if you find it helpful\!
 

@@ -51,7 +51,7 @@ Setup Paths for Input and Output Directories
 ----------------------------------------------
 Example command line execution:
 
-python model_inference_jup.py file ../data/inputs/input.tif -s "worldview"
+python model_inference.py file ../data/inputs/input.tif -s "worldview"
 
 Arguments: 
 1. file: path to input file tif.
@@ -64,7 +64,7 @@ Arguments:
 
 # Implement argparser
 parser = argparse.ArgumentParser(
-        prog="model_inference_jup.py",
+        prog="model_inference.py",
         description="A machine learning model that takes a satellite image of \
 		Greenland supraglacial channels and outputs a binary map of channel locations.")
 add = parser.add_argument
