@@ -128,6 +128,8 @@ seg_connector = tf.keras.models.load_model(
                     'dice_loss': dice_loss}
 )
 
+seg_connector.get_layer('conv2d_80').activation = sigmoid
+
 ### Set Up Functions
 input_ = open_tiff(input_tif_fp, args=args)
 input_ = normalize_to_8bit(input_)

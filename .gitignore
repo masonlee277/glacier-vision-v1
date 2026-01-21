@@ -15,4 +15,9 @@ __pycache__/*
 *.tif
 *.tiff.aux.xml
 *.tif.aux.xml
+.vscode/
+.vscode-server/
 inference/data/logs/
+inference/data/outputs/
+
+!data/inputs/paint1.tif

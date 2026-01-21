@@ -188,14 +188,13 @@ options:
 
 This program processes the input file image, makes predictions using RiverNet and SegConnector models, and saves the result.
 
-### **View Results**
-
-The prediction is saved as a PNG file. You can open and view it using:
+#### Testing and Examples
+Satellite images are not included in this repository. Typical usage might look like the following, running with glacier-vision-v1/inference as the working directory:<br>
 ```
-from PIL import Image  
-prediction = Image.open(output_path)  
-prediction.show()
+python model_inference.py ../data/inputs/2016-06-15_bbwv.tif -s worldview
+python model_inference.py ../data/inputs/LC09_20240802_bb2.tif --bands 1 2 3
 ```
+Images can be always viewed by dragging and dropping into a new QGIS project.
 
 ## **🗺️ Data**
 
