@@ -44,8 +44,6 @@ def unetV1(sz=(512, 512, 1)):
 
 
 
-
-
 def conv_block(input, num_filters):
     x = Conv2D(num_filters, 3, padding='same')(input)
     x = BatchNormalization()(x)
@@ -173,14 +171,6 @@ def s(targets, inputs, smooth=1e-06):
     return Dice_BCE
 
 
-def mean_iouV1(y_true, y_pred):
-    yt0 = tf.cast(y_true[:, :, :, 0], 'float32')
-    yp0 = K.cast(y_pred[:, :, :, 0] > 0.5, 'float32')
-    inter = tf.math.count_nonzero(tf.logical_and(tf.equal(yt0, 1), tf.equal(yp0, 1)), dtype='float32')
-    union = tf.math.count_nonzero(tf.add(yt0, yp0), dtype='float32')
-    iou = tf.where(tf.equal(union, 0), 1.0, tf.cast(inter / union, 'float32'))
-    return iou
-
 def mean_iou(y_true, y_pred):
     yt0 = y_true[:, :, :, 0]
     yp0 = K.cast(y_pred[:, :, :, 0] > 0.5, 'float32')
@@ -191,13 +181,6 @@ def mean_iou(y_true, y_pred):
 
 
 def dice_loss(y_true, y_pred):
-    smooth = 1.0
-    y_true_f = tf.keras.backend.flatten(y_true)
-    y_pred_f = tf.keras.backend.flatten(y_pred)
-    intersection = tf.reduce_sum(y_true_f * y_pred_f)
-    return 1.0 - (2.0 * intersection + smooth) / (tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f) + smooth)
-
-def dice_lossV1(y_true, y_pred):
     smooth = 1.0
     y_true_f = tf.cast(tf.keras.backend.flatten(y_true), dtype=tf.float64)  # Cast to double tensor
     y_pred_f = tf.cast(tf.keras.backend.flatten(y_pred), dtype=tf.float64)  # Cast to double tensor
@@ -213,7 +196,7 @@ def dice_loss_with_weights(y_true, y_pred, w_tp=2.0, w_fp=0.01, w_tn=0.01, w_fn=
     fn = w_fn * tf.reduce_sum(y_true * (1 - y_pred))
     dice_loss = 1 - (2 * tp + 1) / (2 * tp + fp + fn + 1)
     return dice_loss
-
+'''
 def dice_loss(y_true, y_pred):
     smooth = 1.0
     y_true_f = tf.keras.backend.flatten(y_true)
@@ -222,7 +205,7 @@ def dice_loss(y_true, y_pred):
     y_pred_f = tf.cast(y_pred_f, tf.float32)
     intersection = tf.reduce_sum(y_true_f * y_pred_f)
     return 1.0 - (2.0 * intersection + smooth) / (tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f) + smooth)
-
+'''
 def dice_with_cross_entropy(y_true, y_pred):
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)

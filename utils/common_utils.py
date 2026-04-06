@@ -122,29 +122,6 @@ def get_file_names(images_path: str, labels_path: str) -> List[str]:
     (X_train_filenames, X_val_filenames, y_train, y_val) = train_test_split(filenames_image, filenames_mask, test_size=0.2, random_state=1)
     return (X_train_filenames, X_val_filenames)
 
-
-
-def find_checkpoints(checkpoint_dir, step, h5=False):
-    checkpoints = []
-    for filename in os.listdir(checkpoint_dir):
-        if h5:
-            if filename.endswith('.h5'):
-                try:
-                    checkpoint_number = int(filename.split('_epoch_')[1].split('.h5')[0])
-                    if checkpoint_number % step == 0:
-                        checkpoints.append(os.path.join(checkpoint_dir, filename))
-                except (IndexError, ValueError):
-                    continue
-        elif filename.endswith('.ckpt.index'):
-            try:
-                checkpoint_number = int(filename.split('-')[1].split('.ckpt')[0])
-                if checkpoint_number % step == 0:
-                    checkpoints.append(os.path.join(checkpoint_dir, filename[:-6]))
-            except (IndexError, ValueError):
-                continue
-    return checkpoints
-
-
 def check_gpu():
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
@@ -167,8 +144,17 @@ def transfer_metadata(original_tiff_path, prediction_array, output_path):
     Returns:
     None
     """
+    while True:
+        try:
+            src = rasterio.open(original_tiff_path)
+        except rasterio._err.CPLE_AppDefinedError:
+            print(original_tiff_path, ": Permission denied. File may be open elsewhere? (q to quit)", sep='')
+            if 'q' in input():
+                exit()
+        else:
+            break
     # Open the original TIFF to get its metadata
-    with rasterio.open(original_tiff_path) as src:
+    with src:
         # Get metadata
         metadata = src.meta.copy()
         
@@ -186,10 +172,19 @@ def transfer_metadata(original_tiff_path, prediction_array, output_path):
         )
         
         # Create new TIFF with updated metadata
-        with rasterio.open(output_path, 'w', **metadata) as dst:
+        while True:
+            try:
+                dst = rasterio.open(output_path, 'w', **metadata)
+            except:
+                print(output_path, ": Permission denied. File may be open elsewhere? (q to quit)", sep='')
+                if 'q' in input():
+                    exit()
+            else:
+                break
+        with dst:
             dst.write(binary_prediction, 1)  # Write the binary prediction array to the first band
             
         print(f"New TIFF saved with transferred metadata at: {output_path}")
         print(f"Final metadata: {metadata}")
 
-       
+

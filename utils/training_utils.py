@@ -263,7 +263,7 @@ def custom_fitV1(model,             # The neural network model to train.
     return history
 
 import wandb
-from wandb.keras import WandbCallback
+from wandb.integration.keras import WandbCallback
 def train_modelV1(model: tf.keras.Model,
                   images_path: str,
                   labels_path: str,
