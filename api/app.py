@@ -22,7 +22,7 @@ sys.path.append(project_root)
 
 from utils.image_utils import open_tiff, normalize_to_8bit
 from utils.evaluation_utils import process_and_predict_tiff, predict_from_tiffV1, connect_rivers
-from utils import compile_model, mean_iou, dice_lossV1
+from utils import compile_model, mean_iou, dice_loss as dice_lossV1
 from utils.logger_utils import Logger
 from api.config import settings
 
