@@ -1,11 +1,26 @@
+# UV / Python environments
+.venv/
+
+# Data
 data/sat_images
+data/outputs/
+data/uploads/
+data/logs/
+data/model_weights/
+
+# Experiment tracking / cloud
 .appmap
 .netrc
 .lightning_studio
 /appmap
 segment-anything-2
 wandb
-data/outputs/
+.keras/
+.wget-hsts
+
+# IDE
+.idea/
+.DS_Store
 *.sw?
 __pycache__/*
 **/__pycache__/*

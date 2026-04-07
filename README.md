@@ -196,6 +196,59 @@ python model_inference.py ../data/inputs/LC09_20240802_bb2.tif --bands 1 2 3
 ```
 Images can be always viewed by dragging and dropping into a new QGIS project.
 
+## **🌐 REST API (Local Development)**
+
+The FastAPI server exposes the full prediction pipeline over HTTP. This is the recommended way to integrate Glacier Vision into other tools.
+
+### **Quick start (macOS / Linux)**
+
+Requires [uv](https://docs.astral.sh/uv/) and **Python 3.10**.
+
+```bash
+# Install uv (once)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and start
+git clone https://github.com/masonlee277/glacier-vision-v1.git
+cd glacier-vision-v1
+./start.sh
+```
+
+`./start.sh` automatically creates an isolated `.venv`, installs all pinned dependencies via `uv sync`, and starts the server.
+
+**Options:**
+```bash
+./start.sh --port 8080      # custom port (default: 8000)
+./start.sh --reload         # hot-reload for development
+```
+
+### **API endpoints**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/ping` | Health check |
+| `POST` | `/predict/` | Upload a TIFF → returns PNG prediction |
+| `POST` | `/upload/` | Upload TIFFs, returns file IDs |
+| `POST` | `/predict_multiple/` | Run batch prediction (SSE stream) |
+| `GET` | `/prediction/{id}` | Retrieve stored prediction |
+| `POST` | `/connect_rivers/` | Run SegConnector only on an existing river map |
+
+Interactive docs at **http://localhost:8000/docs**
+
+### **Example**
+
+```bash
+curl -X POST http://localhost:8000/predict/ \
+  -F "file=@path/to/image.tif" \
+  --output prediction.png
+```
+
+### **Platform notes**
+
+- **Apple Silicon (M1/M2/M3):** `tensorflow-macos==2.13.0` is selected automatically
+- **Linux / Intel:** `tensorflow==2.13.0` is selected automatically
+- Python 3.10 is required (TF 2.13 is not compatible with 3.11+)
+
 ## **🗺️ Data**
 
 We use high-resolution satellite imagery from various sources:

@@ -1,0 +1,65 @@
+[project]
+name = "glacier-vision"
+version = "1.0.0"
+description = "High-Resolution Mapping of Supra-Glacial Rivers using Dual U-Net CNNs"
+requires-python = ">=3.10,<3.11"
+
+dependencies = [
+    # Web API
+    "fastapi>=0.100.0,<1.0.0",
+    "uvicorn[standard]>=0.23.0",
+    "pydantic-settings>=2.0.0",
+    "sse-starlette>=1.6.0",
+    "python-multipart>=0.0.6",
+
+    # TensorFlow — platform-specific
+    # Apple Silicon (M1/M2/M3)
+    "tensorflow-macos==2.13.0 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    # Intel Mac or Linux
+    "tensorflow==2.13.0 ; sys_platform != 'darwin' or platform_machine != 'arm64'",
+
+    # Core ML / numerics
+    "numpy>=1.24,<2.0",
+    "keras==2.13.1",
+    "h5py>=3.9.0",
+
+    # Image / geospatial processing
+    "pillow>=10.0.0",
+    "rasterio>=1.3.0",
+    "imageio>=2.31.0",
+    "tifffile>=2023.7.0",
+    "opencv-python-headless>=4.8.0",
+    "scikit-image>=0.21.0",
+    "albumentations>=1.3.0",
+
+    # Data / analysis
+    "pandas>=2.0.0",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.7.0",
+    "tqdm>=4.65.0",
+
+    # Experiment tracking
+    "wandb==0.16.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+]
+
+[tool.uv]
+# TF 2.13 declares typing-extensions<4.6.0 but doesn't actually require it at runtime.
+# pydantic-settings 2.x needs >=4.12. We override to unblock resolution.
+override-dependencies = [
+    "typing-extensions>=4.12.2",
+    "numpy<2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["api", "utils", "inference"]

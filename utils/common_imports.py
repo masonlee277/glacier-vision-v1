@@ -27,7 +27,11 @@ from skimage import morphology
 from rasterio import Affine
 import random
 import gc
-from tensorflow.python.keras.backend import set_session
+# set_session removed in TF 2.16; eager mode is default in TF2
+try:
+    from tensorflow.compat.v1.keras.backend import set_session
+except ImportError:
+    def set_session(*args, **kwargs): pass
 import sys
 import warnings
 from copy import copy

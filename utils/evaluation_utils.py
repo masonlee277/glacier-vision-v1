@@ -168,11 +168,6 @@ def predict_from_tiffV1(img: np.ndarray, model: Model, fix_lines: bool=False, re
     Returns:
     np.ndarray : The predicted image
     """
-    config = tf.compat.v1.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.log_device_placement = True
-    sess = tf.compat.v1.Session(config=config)
-    set_session(sess)
     (width_im, height_im, channels) = np.shape(img)
     logger.debug(f"Image shape: {img.shape}")
     print(width_im, height_im)
@@ -194,12 +189,6 @@ def ensemble_predict_from_tiffV1(img: np.ndarray, model_list: Model, fix_lines: 
     logger.debug(f"Number of models: {len(model_list)}")
     logger.debug(f"Parameters: fix_lines={fix_lines}, resize={resize}, tile_size={tile_size}, overlap={overlap}")
 
-    config = tf.compat.v1.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.log_device_placement = True
-    sess = tf.compat.v1.Session(config=config)
-    set_session(sess)
-    
     width_im, height_im = np.shape(img)[:2]
     logger.debug(f"Image dimensions: {width_im}x{height_im}")
     
@@ -244,11 +233,6 @@ def parallel_ensemble_predict_from_tiff(img: np.ndarray, model_list: Model, fix_
     Returns:
     np.ndarray : The predicted image
     """
-    config = tf.compat.v1.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.log_device_placement = True
-    sess = tf.compat.v1.Session(config=config)
-    set_session(sess)
     (width_im, height_im) = np.shape(img)
     print(width_im, height_im)
     recon_fin = np.zeros_like(img, dtype=np.float64)
@@ -377,103 +361,6 @@ def revert_to_original_size(resized_image, original_shape):
     logger.info(f"Image resized from {(current_height, current_width)} back to original size {(original_height, original_width)}")
     return original_image
 
-#----------------------------------------------------
-'''
-def seg_prediction_tiff(map, save_path, seg_conncector):
-    logger.info("Starting seg_prediction_tiff")
-    logger.debug(f"Input map shape: {map.shape}")
-    
-    original_shape = np.shape(map)
-    logger.debug(f"Original shape: {original_shape}")
-
-    image = ensure_minimum_size(map)
-    chunk_size = 512 * 10
-    logger.info(f'Image Before Crop: {np.shape(image)}')
-    logger.info(f'Image After Crop: {np.shape(image)}')
-    image_height, image_width = image.shape[:2]
-    total_chunks = image_height * image_width / (chunk_size * chunk_size)
-    logger.info(f'TOTAL CHUNKS TO BE PROCESSED: {total_chunks}')
-    
-    pred_map_full = np.zeros((image_height, image_width))
-    logger.info('pred_map initialized')
-    
-    cur_chunk = 0
-    for i in range(0, image_height, chunk_size):
-        for j in range(0, image_width, chunk_size):
-            logger.info(f'Processing chunk: {cur_chunk}')
-            i_min = i
-            i_max = min(i + chunk_size, image_height)
-            j_min = j
-            j_max = min(j + chunk_size, image_width)
-
-            if i_max == image_height:  # this is the last row of chunks
-                i_min = image_height - chunk_size
-                i_max = image_height
-
-            if j_max == image_width:  # this is the last column of chunks
-                j_min = image_width - chunk_size
-                j_max = image_width
-
-            chunk = image[i_min:i_max, j_min:j_max]
-            shape(chunk)
-            #seg_map = np.zeros(shape=(chunk_size,chunk_size))
-            seg_map = map
-
-            #One Pass At Low Resolution
-            seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
-            seg_map = np.where(seg_map > 0.1, 1, 0)
-            if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
-            seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
-
-            seg_map = np.where(seg_map > 0.1, 1, 0)
-            if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
-            seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
-
-            seg_map = np.where(seg_map > 0.1, 1, 0)
-            if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
-            seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
-
-            seg_map = np.where(seg_map > 0.1, 1, 0)
-            if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
-            seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
-
-            check_segmap_zeroes(seg_map)
-
-            #################################
-            # Adjusting for overlap on the boundary
-            logger.info(f'seg_map: {np.shape(seg_map)}, pred_map: {np.shape(pred_map_full[i_min:i_max, j_min:j_max])}')
-            if np.shape(seg_map) == np.shape(pred_map_full[i_min:i_max, j_min:j_max]):
-                logger.info('correct dimensions pasting')
-                pred_map_full[i_min:i_max, j_min:j_max] = seg_map
-            else:
-                logger.info('incorrect dimensions pasting')
-                (h, w) = np.shape(pred_map_full[i_min:i_max, j_min:j_max])
-                pred_map_full[i_min:i_max, j_min:j_max] = seg_map[:h, :w]
-            del chunk
-            del seg_map
-            cur_chunk += 1
-
-    pred_map_full = revert_to_original_size(pred_map_full, original_shape)
-
-    try:
-        mask = (map == 0)
-        pred_map_full = pred_map_full * ~mask
-
-    except:
-        mask = (map[:,:,0] == 0)
-        pred_map_full = pred_map_full * ~mask
-
-    if save_path is not None:
-        try:
-            tifffile.imsave(save_path, pred_map_full)
-        except:
-            logger.error('saving failed')
-    logger.info('Retreiving Final Prediction')
-    logger.info(f'Final size: {np.shape(pred_map_full)}')
-    logger.info("Finished seg_prediction_tiff")
-    return pred_map_full
-'''
-#----------------------------------------------------
 
 def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
     logger.info("Starting full_prediction_tiff")
@@ -541,6 +428,41 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
 
             check_segmap_zeroes(seg_map)
 
+            # for i in range(6):
+            #   offset=50
+            #   print(f'^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+            #   print(f'SegConnector Prediction: {i}')
+            #   if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
+            #   seg_map = predict_from_tiffV1(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=50+offset*i)
+            #   check_segmap_zeroes(seg_map)
+
+            ##Higher Overlap
+            #seg_map = predict_from_tiff(seg_map, seg_conncector, fix_lines=True, resize=False, tile_size = 512, overlap=150)
+
+            #####################################3
+            #if seg_map.ndim == 2: seg_map = np.expand_dims(seg_map, axis=-1)
+
+            # print(f"Original shape: {np.shape(seg_map)}")  # Debug print
+            # original_shape = seg_map.shape  # Storing original shape for later
+
+            # # Downscale seg_map by 2 on each dimension using scikit-image
+            # seg_map_downscaled = resize(seg_map, (original_shape[0]//2, original_shape[1]//2, original_shape[2]), anti_aliasing=True)
+            # print(f"Shape after downscaling: {np.shape(seg_map_downscaled)}")  # Debug print
+
+            # # Make prediction on the downscaled image
+            # seg_map_downscaled = predict_from_tiff(seg_map_downscaled, seg_connector, fix_lines=True, resize=False, tile_size=512, overlap=50)
+            # print(f"Shape after prediction: {np.shape(seg_map_downscaled)}")  # Debug print
+
+            # if seg_map_downscaled.ndim == 2: seg_map_downscaled = np.expand_dims(seg_map_downscaled, axis=-1)
+
+            # # Upscale seg_map back to its original size using scikit-image
+            # seg_map = np.squeeze(resize(seg_map_downscaled, original_shape, anti_aliasing=True))
+
+            # print(f"Shape after upscaling: {np.shape(seg_map)}")  # Debug print
+
+            # # Make sure the rescaled shape is the same as the original shape
+            # #assert seg_map.shape == original_shape, "Shapes are not equal"
+
 
             #################################
             # Adjusting for overlap on the boundary
@@ -564,7 +486,6 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
             # pred_map_full[i_min:i_max, j_max-chunk_border_thickness:j_max] = 1
     pred_map_full = revert_to_original_size(pred_map_full, original_shape)
 
-    """
     try:
         mask = (map == 0)
         pred_map_full = pred_map_full * ~mask
@@ -572,7 +493,6 @@ def full_prediction_tiff(map, save_path, RiverNet_list, seg_conncector):
     except:
         mask = (map[:,:,0] == 0)
         pred_map_full = pred_map_full * ~mask
-    """
 
     if save_path is not None:
         try:
@@ -698,7 +618,7 @@ def predict_from_dataframe_v2(df: pd.DataFrame, model, batch_size: int=64, resiz
     assert images.ndim == 4
     image = images[0]
     print('tiled image data: ', np.shape(images), np.min(image), np.max(image), image.dtype)
-    predictions = model.predict(images, verbose=0)
+    predictions = model.predict(images, verbose=1)
     gc.collect()
     print('prediction data shape: ', np.shape(predictions))
     pred = []
